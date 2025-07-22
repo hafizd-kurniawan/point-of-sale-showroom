@@ -8,6 +8,7 @@ import (
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/config"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/admin"
+	masterHandler "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/admin/master"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/auth"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/middleware"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/interfaces"
@@ -16,27 +17,30 @@ import (
 
 // Router handles all HTTP routes
 type Router struct {
-	authHandler  *auth.Handler
-	adminHandler *admin.Handler
-	jwtManager   *utils.JWTManager
-	sessionRepo  interfaces.UserSessionRepository
-	config       *config.Config
+	authHandler   *auth.Handler
+	adminHandler  *admin.Handler
+	masterHandler *masterHandler.Handler
+	jwtManager    *utils.JWTManager
+	sessionRepo   interfaces.UserSessionRepository
+	config        *config.Config
 }
 
 // NewRouter creates a new router
 func NewRouter(
 	authHandler *auth.Handler,
 	adminHandler *admin.Handler,
+	masterHandler *masterHandler.Handler,
 	jwtManager *utils.JWTManager,
 	sessionRepo interfaces.UserSessionRepository,
 	config *config.Config,
 ) *Router {
 	return &Router{
-		authHandler:  authHandler,
-		adminHandler: adminHandler,
-		jwtManager:   jwtManager,
-		sessionRepo:  sessionRepo,
-		config:       config,
+		authHandler:   authHandler,
+		adminHandler:  adminHandler,
+		masterHandler: masterHandler,
+		jwtManager:    jwtManager,
+		sessionRepo:   sessionRepo,
+		config:        config,
 	}
 }
 
@@ -93,6 +97,33 @@ func (r *Router) SetupRoutes() *gin.Engine {
 			userGroup.GET("/role/:role", r.adminHandler.GetUsersByRole)
 			userGroup.GET("/:id/sessions", r.adminHandler.GetUserSessions)
 			userGroup.DELETE("/:id/sessions", r.adminHandler.RevokeUserSessions)
+		}
+
+		// Customer management
+		customerGroup := adminGroup.Group("/customers")
+		{
+			customerGroup.POST("", r.masterHandler.CreateCustomer)
+			customerGroup.GET("", r.masterHandler.GetCustomers)
+			customerGroup.GET("/:id", r.masterHandler.GetCustomer)
+			customerGroup.PUT("/:id", r.masterHandler.UpdateCustomer)
+			customerGroup.DELETE("/:id", r.masterHandler.DeleteCustomer)
+		}
+
+		// Supplier management
+		supplierGroup := adminGroup.Group("/suppliers")
+		{
+			supplierGroup.POST("", r.masterHandler.CreateSupplier)
+			supplierGroup.GET("", r.masterHandler.GetSuppliers)
+			supplierGroup.GET("/:id", r.masterHandler.GetSupplier)
+			supplierGroup.PUT("/:id", r.masterHandler.UpdateSupplier)
+			supplierGroup.DELETE("/:id", r.masterHandler.DeleteSupplier)
+		}
+
+		// Vehicle brand management
+		vehicleBrandGroup := adminGroup.Group("/vehicle-brands")
+		{
+			vehicleBrandGroup.POST("", r.masterHandler.CreateVehicleBrand)
+			vehicleBrandGroup.GET("", r.masterHandler.GetVehicleBrands)
 		}
 	}
 

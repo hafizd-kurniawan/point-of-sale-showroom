@@ -11,10 +11,12 @@ import (
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/config"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/admin"
+	masterHandler "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/admin/master"
 	authHandlers "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/auth"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/interfaces"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/routes"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services"
+	masterServices "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/master"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/utils"
 )
 
@@ -61,6 +63,9 @@ func setupTestRouter() http.Handler {
 	// Mock repositories for testing (nil for basic endpoint tests)
 	var userRepo interfaces.UserRepository
 	var sessionRepo interfaces.UserSessionRepository
+	var customerRepo interfaces.CustomerRepository
+	var supplierRepo interfaces.SupplierRepository
+	var vehicleBrandRepo interfaces.VehicleBrandRepository
 
 	// Initialize JWT manager
 	jwtManager := utils.NewJWTManager(cfg.JWT.SecretKey, cfg.JWT.GetExpiration())
@@ -68,13 +73,17 @@ func setupTestRouter() http.Handler {
 	// Initialize services
 	authService := services.NewAuthService(userRepo, sessionRepo, jwtManager)
 	userService := services.NewUserService(userRepo, sessionRepo)
+	customerService := masterServices.NewCustomerService(customerRepo)
+	supplierService := masterServices.NewSupplierService(supplierRepo)
+	vehicleBrandService := masterServices.NewVehicleBrandService(vehicleBrandRepo)
 
 	// Initialize handlers
 	authHandler := authHandlers.NewHandler(authService)
 	adminHandler := admin.NewHandler(userService)
+	masterHandler := masterHandler.NewHandler(customerService, supplierService, vehicleBrandService)
 
 	// Initialize router
-	router := routes.NewRouter(authHandler, adminHandler, jwtManager, sessionRepo, cfg)
+	router := routes.NewRouter(authHandler, adminHandler, masterHandler, jwtManager, sessionRepo, cfg)
 
 	return router.SetupRoutes()
 }
