@@ -16,27 +16,39 @@ import (
 
 // Router handles all HTTP routes
 type Router struct {
-	authHandler  *auth.Handler
-	adminHandler *admin.Handler
-	jwtManager   *utils.JWTManager
-	sessionRepo  interfaces.UserSessionRepository
-	config       *config.Config
+	authHandler            *auth.Handler
+	adminHandler           *admin.Handler
+	customerHandler        *admin.CustomerHandler
+	supplierHandler        *admin.SupplierHandler
+	vehicleMasterHandler   *admin.VehicleMasterHandler
+	productCategoryHandler *admin.ProductCategoryHandler
+	jwtManager             *utils.JWTManager
+	sessionRepo            interfaces.UserSessionRepository
+	config                 *config.Config
 }
 
 // NewRouter creates a new router
 func NewRouter(
 	authHandler *auth.Handler,
 	adminHandler *admin.Handler,
+	customerHandler *admin.CustomerHandler,
+	supplierHandler *admin.SupplierHandler,
+	vehicleMasterHandler *admin.VehicleMasterHandler,
+	productCategoryHandler *admin.ProductCategoryHandler,
 	jwtManager *utils.JWTManager,
 	sessionRepo interfaces.UserSessionRepository,
 	config *config.Config,
 ) *Router {
 	return &Router{
-		authHandler:  authHandler,
-		adminHandler: adminHandler,
-		jwtManager:   jwtManager,
-		sessionRepo:  sessionRepo,
-		config:       config,
+		authHandler:            authHandler,
+		adminHandler:           adminHandler,
+		customerHandler:        customerHandler,
+		supplierHandler:        supplierHandler,
+		vehicleMasterHandler:   vehicleMasterHandler,
+		productCategoryHandler: productCategoryHandler,
+		jwtManager:             jwtManager,
+		sessionRepo:            sessionRepo,
+		config:                 config,
 	}
 }
 
@@ -93,6 +105,68 @@ func (r *Router) SetupRoutes() *gin.Engine {
 			userGroup.GET("/role/:role", r.adminHandler.GetUsersByRole)
 			userGroup.GET("/:id/sessions", r.adminHandler.GetUserSessions)
 			userGroup.DELETE("/:id/sessions", r.adminHandler.RevokeUserSessions)
+		}
+
+		// Customer management
+		customerGroup := adminGroup.Group("/customers")
+		{
+			customerGroup.POST("", r.customerHandler.CreateCustomer)
+			customerGroup.GET("", r.customerHandler.GetCustomers)
+			customerGroup.GET("/:id", r.customerHandler.GetCustomer)
+			customerGroup.PUT("/:id", r.customerHandler.UpdateCustomer)
+			customerGroup.DELETE("/:id", r.customerHandler.DeleteCustomer)
+		}
+
+		// Supplier management
+		supplierGroup := adminGroup.Group("/suppliers")
+		{
+			supplierGroup.POST("", r.supplierHandler.CreateSupplier)
+			supplierGroup.GET("", r.supplierHandler.GetSuppliers)
+			supplierGroup.GET("/:id", r.supplierHandler.GetSupplier)
+			supplierGroup.PUT("/:id", r.supplierHandler.UpdateSupplier)
+			supplierGroup.DELETE("/:id", r.supplierHandler.DeleteSupplier)
+		}
+
+		// Vehicle brand management
+		vehicleBrandGroup := adminGroup.Group("/vehicle-brands")
+		{
+			vehicleBrandGroup.POST("", r.vehicleMasterHandler.CreateVehicleBrand)
+			vehicleBrandGroup.GET("", r.vehicleMasterHandler.GetVehicleBrands)
+			vehicleBrandGroup.GET("/:id", r.vehicleMasterHandler.GetVehicleBrand)
+			vehicleBrandGroup.PUT("/:id", r.vehicleMasterHandler.UpdateVehicleBrand)
+			vehicleBrandGroup.DELETE("/:id", r.vehicleMasterHandler.DeleteVehicleBrand)
+		}
+
+		// Vehicle category management
+		vehicleCategoryGroup := adminGroup.Group("/vehicle-categories")
+		{
+			vehicleCategoryGroup.POST("", r.vehicleMasterHandler.CreateVehicleCategory)
+			vehicleCategoryGroup.GET("", r.vehicleMasterHandler.GetVehicleCategories)
+			vehicleCategoryGroup.GET("/:id", r.vehicleMasterHandler.GetVehicleCategory)
+			vehicleCategoryGroup.PUT("/:id", r.vehicleMasterHandler.UpdateVehicleCategory)
+			vehicleCategoryGroup.DELETE("/:id", r.vehicleMasterHandler.DeleteVehicleCategory)
+		}
+
+		// Vehicle model management
+		vehicleModelGroup := adminGroup.Group("/vehicle-models")
+		{
+			vehicleModelGroup.POST("", r.vehicleMasterHandler.CreateVehicleModel)
+			vehicleModelGroup.GET("", r.vehicleMasterHandler.GetVehicleModels)
+			vehicleModelGroup.GET("/:id", r.vehicleMasterHandler.GetVehicleModel)
+			vehicleModelGroup.PUT("/:id", r.vehicleMasterHandler.UpdateVehicleModel)
+			vehicleModelGroup.DELETE("/:id", r.vehicleMasterHandler.DeleteVehicleModel)
+		}
+
+		// Product category management
+		productCategoryGroup := adminGroup.Group("/product-categories")
+		{
+			productCategoryGroup.POST("", r.productCategoryHandler.CreateProductCategory)
+			productCategoryGroup.GET("", r.productCategoryHandler.GetProductCategories)
+			productCategoryGroup.GET("/:id", r.productCategoryHandler.GetProductCategory)
+			productCategoryGroup.PUT("/:id", r.productCategoryHandler.UpdateProductCategory)
+			productCategoryGroup.DELETE("/:id", r.productCategoryHandler.DeleteProductCategory)
+			productCategoryGroup.GET("/tree", r.productCategoryHandler.GetProductCategoryTree)
+			productCategoryGroup.GET("/:id/children", r.productCategoryHandler.GetProductCategoryChildren)
 		}
 	}
 

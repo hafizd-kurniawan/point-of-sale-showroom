@@ -20,6 +20,7 @@ import (
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/interfaces"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/routes"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services"
+	masterService "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/master"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/utils"
 )
 
@@ -85,14 +86,37 @@ func main() {
 
 // Dependencies holds all application dependencies
 type Dependencies struct {
-	userRepo     interfaces.UserRepository
-	sessionRepo  interfaces.UserSessionRepository
-	authService  *services.AuthService
-	userService  *services.UserService
-	authHandler  *auth.Handler
-	adminHandler *admin.Handler
-	jwtManager   *utils.JWTManager
-	router       *routes.Router
+	// Repositories
+	userRepo              interfaces.UserRepository
+	sessionRepo           interfaces.UserSessionRepository
+	customerRepo          interfaces.CustomerRepository
+	supplierRepo          interfaces.SupplierRepository
+	vehicleBrandRepo      interfaces.VehicleBrandRepository
+	vehicleCategoryRepo   interfaces.VehicleCategoryRepository
+	vehicleModelRepo      interfaces.VehicleModelRepository
+	productCategoryRepo   interfaces.ProductCategoryRepository
+	
+	// Services
+	authService           *services.AuthService
+	userService           *services.UserService
+	customerService       *masterService.CustomerService
+	supplierService       *masterService.SupplierService
+	vehicleBrandService   *masterService.VehicleBrandService
+	vehicleCategoryService *masterService.VehicleCategoryService
+	vehicleModelService   *masterService.VehicleModelService
+	productCategoryService *masterService.ProductCategoryService
+	
+	// Handlers
+	authHandler           *auth.Handler
+	adminHandler          *admin.Handler
+	customerHandler       *admin.CustomerHandler
+	supplierHandler       *admin.SupplierHandler
+	vehicleMasterHandler  *admin.VehicleMasterHandler
+	productCategoryHandler *admin.ProductCategoryHandler
+	
+	// Utils
+	jwtManager            *utils.JWTManager
+	router                *routes.Router
 }
 
 // initializeDatabase sets up database connection and runs migrations
@@ -122,6 +146,12 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 	// Initialize repositories
 	userRepo := implementations.NewUserRepository(db)
 	sessionRepo := implementations.NewUserSessionRepository(db)
+	customerRepo := implementations.NewCustomerRepository(db)
+	supplierRepo := implementations.NewSupplierRepository(db)
+	vehicleBrandRepo := implementations.NewVehicleBrandRepository(db)
+	vehicleCategoryRepo := implementations.NewVehicleCategoryRepository(db)
+	vehicleModelRepo := implementations.NewVehicleModelRepository(db)
+	productCategoryRepo := implementations.NewProductCategoryRepository(db)
 
 	// Initialize JWT manager
 	jwtManager := utils.NewJWTManager(cfg.JWT.SecretKey, cfg.JWT.GetExpiration())
@@ -129,22 +159,58 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 	// Initialize services
 	authService := services.NewAuthService(userRepo, sessionRepo, jwtManager)
 	userService := services.NewUserService(userRepo, sessionRepo)
+	customerService := masterService.NewCustomerService(customerRepo)
+	supplierService := masterService.NewSupplierService(supplierRepo)
+	vehicleBrandService := masterService.NewVehicleBrandService(vehicleBrandRepo)
+	vehicleCategoryService := masterService.NewVehicleCategoryService(vehicleCategoryRepo)
+	vehicleModelService := masterService.NewVehicleModelService(vehicleModelRepo, vehicleBrandRepo, vehicleCategoryRepo)
+	productCategoryService := masterService.NewProductCategoryService(productCategoryRepo)
 
 	// Initialize handlers
 	authHandler := auth.NewHandler(authService)
 	adminHandler := admin.NewHandler(userService)
+	customerHandler := admin.NewCustomerHandler(customerService)
+	supplierHandler := admin.NewSupplierHandler(supplierService)
+	vehicleMasterHandler := admin.NewVehicleMasterHandler(vehicleBrandService, vehicleCategoryService, vehicleModelService)
+	productCategoryHandler := admin.NewProductCategoryHandler(productCategoryService)
 
 	// Initialize router
-	router := routes.NewRouter(authHandler, adminHandler, jwtManager, sessionRepo, cfg)
+	router := routes.NewRouter(
+		authHandler,
+		adminHandler,
+		customerHandler,
+		supplierHandler,
+		vehicleMasterHandler,
+		productCategoryHandler,
+		jwtManager,
+		sessionRepo,
+		cfg,
+	)
 
 	return &Dependencies{
-		userRepo:     userRepo,
-		sessionRepo:  sessionRepo,
-		authService:  authService,
-		userService:  userService,
-		authHandler:  authHandler,
-		adminHandler: adminHandler,
-		jwtManager:   jwtManager,
-		router:       router,
+		userRepo:               userRepo,
+		sessionRepo:            sessionRepo,
+		customerRepo:           customerRepo,
+		supplierRepo:           supplierRepo,
+		vehicleBrandRepo:       vehicleBrandRepo,
+		vehicleCategoryRepo:    vehicleCategoryRepo,
+		vehicleModelRepo:       vehicleModelRepo,
+		productCategoryRepo:    productCategoryRepo,
+		authService:            authService,
+		userService:            userService,
+		customerService:        customerService,
+		supplierService:        supplierService,
+		vehicleBrandService:    vehicleBrandService,
+		vehicleCategoryService: vehicleCategoryService,
+		vehicleModelService:    vehicleModelService,
+		productCategoryService: productCategoryService,
+		authHandler:            authHandler,
+		adminHandler:           adminHandler,
+		customerHandler:        customerHandler,
+		supplierHandler:        supplierHandler,
+		vehicleMasterHandler:   vehicleMasterHandler,
+		productCategoryHandler: productCategoryHandler,
+		jwtManager:             jwtManager,
+		router:                 router,
 	}
 }
