@@ -72,9 +72,15 @@ func setupTestRouter() http.Handler {
 	// Initialize handlers
 	authHandler := authHandlers.NewHandler(authService)
 	adminHandler := admin.NewHandler(userService)
+	
+	// Initialize dummy master data handlers for test
+	customerHandler := (*admin.CustomerHandler)(nil)
+	supplierHandler := (*admin.SupplierHandler)(nil)
+	vehicleMasterHandler := (*admin.VehicleMasterHandler)(nil)
+	productCategoryHandler := (*admin.ProductCategoryHandler)(nil)
 
 	// Initialize router
-	router := routes.NewRouter(authHandler, adminHandler, jwtManager, sessionRepo, cfg)
+	router := routes.NewRouter(authHandler, adminHandler, customerHandler, supplierHandler, vehicleMasterHandler, productCategoryHandler, jwtManager, sessionRepo, cfg)
 
 	return router.SetupRoutes()
 }
