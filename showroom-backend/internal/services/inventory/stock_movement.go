@@ -139,10 +139,10 @@ func (s *StockMovementService) CreateManualAdjustment(ctx context.Context, produ
 		ProductID:       productID,
 		MovementType:    inventory.MovementTypeAdjustment,
 		ReferenceType:   inventory.ReferenceTypeAdjustment,
-		ReferenceID:     0, // No specific reference for manual adjustments
+		ReferenceID:     nil, // No specific reference for manual adjustments
 		QuantityMoved:   adjustmentQuantity,
 		UnitCost:        0, // Will be populated from product cost
-		MovementReason:  reason,
+		MovementReason:  &reason,
 		Notes:           &reason,
 	}
 
@@ -163,12 +163,12 @@ func (s *StockMovementService) CreateTransfer(ctx context.Context, productID int
 		ProductID:       productID,
 		MovementType:    inventory.MovementTypeTransfer,
 		ReferenceType:   inventory.ReferenceTypeTransfer,
-		ReferenceID:     0,
+		ReferenceID:     nil,
 		QuantityMoved:   quantity,
 		UnitCost:        0, // Will be populated from product cost
 		LocationFrom:    &fromLocation,
 		LocationTo:      &toLocation,
-		MovementReason:  reason,
+		MovementReason:  &reason,
 		Notes:           &reason,
 	}
 

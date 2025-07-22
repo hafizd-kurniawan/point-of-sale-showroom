@@ -7,17 +7,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/middleware"
-	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/inventory"
-	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/inventory"
+	inventoryModels "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/inventory"
+	inventoryServices "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/inventory"
 )
 
 // PurchaseOrderHandler handles purchase order HTTP requests
 type PurchaseOrderHandler struct {
-	poService *inventory.PurchaseOrderService
+	poService *inventoryServices.PurchaseOrderService
 }
 
 // NewPurchaseOrderHandler creates a new purchase order handler
-func NewPurchaseOrderHandler(poService *inventory.PurchaseOrderService) *PurchaseOrderHandler {
+func NewPurchaseOrderHandler(poService *inventoryServices.PurchaseOrderService) *PurchaseOrderHandler {
 	return &PurchaseOrderHandler{
 		poService: poService,
 	}
@@ -30,13 +30,13 @@ func NewPurchaseOrderHandler(poService *inventory.PurchaseOrderService) *Purchas
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param request body inventory.PurchaseOrderPartCreateRequest true "Create purchase order request"
-// @Success 201 {object} common.APIResponse{data=inventory.PurchaseOrderPart}
+// @Param request body inventoryModels.PurchaseOrderPartCreateRequest true "Create purchase order request"
+// @Success 201 {object} common.APIResponse{data=inventoryModels.PurchaseOrderPart}
 // @Failure 400 {object} common.ErrorResponse
 // @Failure 401 {object} common.ErrorResponse
 // @Router /inventory/purchase-orders [post]
 func (h *PurchaseOrderHandler) CreatePurchaseOrder(c *gin.Context) {
-	var req inventory.PurchaseOrderPartCreateRequest
+	var req inventoryModels.PurchaseOrderPartCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, common.NewValidationErrorResponse(
 			"Validation failed", "Invalid request data", err.Error(),
@@ -72,7 +72,7 @@ func (h *PurchaseOrderHandler) CreatePurchaseOrder(c *gin.Context) {
 // @Security BearerAuth
 // @Produce json
 // @Param id path int true "Purchase Order ID"
-// @Success 200 {object} common.APIResponse{data=inventory.PurchaseOrderPart}
+// @Success 200 {object} common.APIResponse{data=inventoryModels.PurchaseOrderPart}
 // @Failure 400 {object} common.ErrorResponse
 // @Failure 404 {object} common.ErrorResponse
 // @Router /inventory/purchase-orders/{id} [get]
@@ -106,7 +106,7 @@ func (h *PurchaseOrderHandler) GetPurchaseOrder(c *gin.Context) {
 // @Security BearerAuth
 // @Produce json
 // @Param number path string true "Purchase Order Number"
-// @Success 200 {object} common.APIResponse{data=inventory.PurchaseOrderPart}
+// @Success 200 {object} common.APIResponse{data=inventoryModels.PurchaseOrderPart}
 // @Failure 400 {object} common.ErrorResponse
 // @Failure 404 {object} common.ErrorResponse
 // @Router /inventory/purchase-orders/number/{number} [get]
@@ -140,8 +140,8 @@ func (h *PurchaseOrderHandler) GetPurchaseOrderByNumber(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Purchase Order ID"
-// @Param request body inventory.PurchaseOrderPartUpdateRequest true "Update purchase order request"
-// @Success 200 {object} common.APIResponse{data=inventory.PurchaseOrderPart}
+// @Param request body inventoryModels.PurchaseOrderPartUpdateRequest true "Update purchase order request"
+// @Success 200 {object} common.APIResponse{data=inventoryModels.PurchaseOrderPart}
 // @Failure 400 {object} common.ErrorResponse
 // @Failure 404 {object} common.ErrorResponse
 // @Router /inventory/purchase-orders/{id} [put]
@@ -155,7 +155,7 @@ func (h *PurchaseOrderHandler) UpdatePurchaseOrder(c *gin.Context) {
 		return
 	}
 
-	var req inventory.PurchaseOrderPartUpdateRequest
+	var req inventoryModels.PurchaseOrderPartUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, common.NewValidationErrorResponse(
 			"Validation failed", "Invalid request data", err.Error(),
@@ -222,11 +222,11 @@ func (h *PurchaseOrderHandler) DeletePurchaseOrder(c *gin.Context) {
 // @Param supplier_id query int false "Supplier ID filter"
 // @Param status query string false "Status filter"
 // @Param po_type query string false "PO type filter"
-// @Success 200 {object} common.PaginatedResponse{data=[]inventory.PurchaseOrderPartListItem}
+// @Success 200 {object} common.PaginatedResponse{data=[]inventoryModels.PurchaseOrderPartListItem}
 // @Failure 400 {object} common.ErrorResponse
 // @Router /inventory/purchase-orders [get]
 func (h *PurchaseOrderHandler) GetPurchaseOrders(c *gin.Context) {
-	var params inventory.PurchaseOrderPartFilterParams
+	var params inventoryModels.PurchaseOrderPartFilterParams
 	if err := c.ShouldBindQuery(&params); err != nil {
 		c.JSON(http.StatusBadRequest, common.NewValidationErrorResponse(
 			"Invalid query parameters", "Invalid filter parameters", err.Error(),
@@ -242,7 +242,7 @@ func (h *PurchaseOrderHandler) GetPurchaseOrders(c *gin.Context) {
 		return
 	}
 
-	response := common.NewPaginatedResponse(
+	response := common.NewPaginationResponse(
 		"Purchase orders retrieved successfully",
 		orders,
 		total,
@@ -262,7 +262,7 @@ func (h *PurchaseOrderHandler) GetPurchaseOrders(c *gin.Context) {
 // @Param q query string true "Search query"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
-// @Success 200 {object} common.PaginatedResponse{data=[]inventory.PurchaseOrderPartListItem}
+// @Success 200 {object} common.PaginatedResponse{data=[]inventoryModels.PurchaseOrderPartListItem}
 // @Failure 400 {object} common.ErrorResponse
 // @Router /inventory/purchase-orders/search [get]
 func (h *PurchaseOrderHandler) SearchPurchaseOrders(c *gin.Context) {
@@ -285,7 +285,7 @@ func (h *PurchaseOrderHandler) SearchPurchaseOrders(c *gin.Context) {
 		return
 	}
 
-	response := common.NewPaginatedResponse(
+	response := common.NewPaginationResponse(
 		"Purchase order search completed successfully",
 		orders,
 		total,
@@ -473,7 +473,7 @@ func (h *PurchaseOrderHandler) GetWorkflowActions(c *gin.Context) {
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
-// @Success 200 {object} common.PaginatedResponse{data=[]inventory.PurchaseOrderPartListItem}
+// @Success 200 {object} common.PaginatedResponse{data=[]inventoryModels.PurchaseOrderPartListItem}
 // @Failure 400 {object} common.ErrorResponse
 // @Router /inventory/purchase-orders/pending-approval [get]
 func (h *PurchaseOrderHandler) GetPendingApproval(c *gin.Context) {
@@ -488,7 +488,7 @@ func (h *PurchaseOrderHandler) GetPendingApproval(c *gin.Context) {
 		return
 	}
 
-	response := common.NewPaginatedResponse(
+	response := common.NewPaginationResponse(
 		"Pending approval purchase orders retrieved successfully",
 		orders,
 		total,

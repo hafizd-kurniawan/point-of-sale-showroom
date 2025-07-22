@@ -9,6 +9,7 @@ import (
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/admin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/auth"
+	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/inventory"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/middleware"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/interfaces"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/utils"
@@ -22,6 +23,12 @@ type Router struct {
 	supplierHandler        *admin.SupplierHandler
 	vehicleMasterHandler   *admin.VehicleMasterHandler
 	productCategoryHandler *admin.ProductCategoryHandler
+	productHandler         *inventory.ProductHandler
+	purchaseOrderHandler   *inventory.PurchaseOrderHandler
+	goodsReceiptHandler    *inventory.GoodsReceiptHandler
+	stockMovementHandler   *inventory.StockMovementHandler
+	stockAdjustmentHandler *inventory.StockAdjustmentHandler
+	supplierPaymentHandler *inventory.SupplierPaymentHandler
 	jwtManager             *utils.JWTManager
 	sessionRepo            interfaces.UserSessionRepository
 	config                 *config.Config
@@ -35,6 +42,12 @@ func NewRouter(
 	supplierHandler *admin.SupplierHandler,
 	vehicleMasterHandler *admin.VehicleMasterHandler,
 	productCategoryHandler *admin.ProductCategoryHandler,
+	productHandler *inventory.ProductHandler,
+	purchaseOrderHandler *inventory.PurchaseOrderHandler,
+	goodsReceiptHandler *inventory.GoodsReceiptHandler,
+	stockMovementHandler *inventory.StockMovementHandler,
+	stockAdjustmentHandler *inventory.StockAdjustmentHandler,
+	supplierPaymentHandler *inventory.SupplierPaymentHandler,
 	jwtManager *utils.JWTManager,
 	sessionRepo interfaces.UserSessionRepository,
 	config *config.Config,
@@ -46,6 +59,12 @@ func NewRouter(
 		supplierHandler:        supplierHandler,
 		vehicleMasterHandler:   vehicleMasterHandler,
 		productCategoryHandler: productCategoryHandler,
+		productHandler:         productHandler,
+		purchaseOrderHandler:   purchaseOrderHandler,
+		goodsReceiptHandler:    goodsReceiptHandler,
+		stockMovementHandler:   stockMovementHandler,
+		stockAdjustmentHandler: stockAdjustmentHandler,
+		supplierPaymentHandler: supplierPaymentHandler,
 		jwtManager:             jwtManager,
 		sessionRepo:            sessionRepo,
 		config:                 config,
@@ -169,6 +188,83 @@ func (r *Router) SetupRoutes() *gin.Engine {
 			productCategoryGroup.GET("/:id/children", r.productCategoryHandler.GetProductCategoryChildren)
 		}
 	}
+
+	// Inventory routes (inventory role required)
+	inventoryGroup := v1.Group("/inventory")
+	inventoryGroup.Use(middleware.AuthMiddleware(r.jwtManager, r.sessionRepo))
+	inventoryGroup.Use(middleware.RequireRole("admin", "inventory"))
+	{
+		// Product management
+		productGroup := inventoryGroup.Group("/products")
+		{
+			productGroup.POST("", r.productHandler.CreateProduct)
+			productGroup.GET("", r.productHandler.GetProducts)
+			productGroup.GET("/:id", r.productHandler.GetProduct)
+			productGroup.PUT("/:id", r.productHandler.UpdateProduct)
+			productGroup.DELETE("/:id", r.productHandler.DeleteProduct)
+			productGroup.GET("/:id/stock", r.productHandler.GetProductStock)
+			productGroup.GET("/:id/movements", r.stockMovementHandler.GetMovementsByProduct)
+			productGroup.GET("/:id/adjustments", r.stockAdjustmentHandler.GetStockAdjustmentsByProduct)
+		}
+
+		// Purchase Order management
+		purchaseOrderGroup := inventoryGroup.Group("/purchase-orders")
+		{
+			purchaseOrderGroup.POST("", r.purchaseOrderHandler.CreatePurchaseOrder)
+			purchaseOrderGroup.GET("", r.purchaseOrderHandler.GetPurchaseOrders)
+			purchaseOrderGroup.GET("/:id", r.purchaseOrderHandler.GetPurchaseOrder)
+			purchaseOrderGroup.PUT("/:id", r.purchaseOrderHandler.UpdatePurchaseOrder)
+			purchaseOrderGroup.DELETE("/:id", r.purchaseOrderHandler.DeletePurchaseOrder)
+			purchaseOrderGroup.POST("/:id/send", r.purchaseOrderHandler.SendPurchaseOrder)
+			purchaseOrderGroup.POST("/:id/approve", r.purchaseOrderHandler.ApprovePurchaseOrder)
+			purchaseOrderGroup.POST("/:id/cancel", r.purchaseOrderHandler.CancelPurchaseOrder)
+			purchaseOrderGroup.GET("/:id/details", r.purchaseOrderHandler.GetPurchaseOrderDetails)
+		}
+
+		// Goods Receipt management
+		goodsReceiptGroup := inventoryGroup.Group("/goods-receipts")
+		{
+			goodsReceiptGroup.POST("", r.goodsReceiptHandler.CreateGoodsReceipt)
+			goodsReceiptGroup.GET("", r.goodsReceiptHandler.GetGoodsReceipts)
+			goodsReceiptGroup.GET("/:id", r.goodsReceiptHandler.GetGoodsReceipt)
+			goodsReceiptGroup.PUT("/:id", r.goodsReceiptHandler.UpdateGoodsReceipt)
+			goodsReceiptGroup.DELETE("/:id", r.goodsReceiptHandler.DeleteGoodsReceipt)
+			goodsReceiptGroup.GET("/:id/details", r.goodsReceiptHandler.GetGoodsReceiptDetails)
+		}
+
+		// Stock Movement management
+		stockMovementGroup := inventoryGroup.Group("/stock-movements")
+		{
+			stockMovementGroup.GET("", r.stockMovementHandler.GetStockMovements)
+			stockMovementGroup.GET("/:id", r.stockMovementHandler.GetStockMovement)
+			stockMovementGroup.POST("/transfer", r.stockMovementHandler.CreateStockTransfer)
+		}
+
+		// Stock Adjustment management
+		stockAdjustmentGroup := inventoryGroup.Group("/stock-adjustments")
+		{
+			stockAdjustmentGroup.POST("", r.stockAdjustmentHandler.CreateStockAdjustment)
+			stockAdjustmentGroup.GET("", r.stockAdjustmentHandler.GetStockAdjustments)
+			stockAdjustmentGroup.GET("/:id", r.stockAdjustmentHandler.GetStockAdjustment)
+			stockAdjustmentGroup.PUT("/:id", r.stockAdjustmentHandler.UpdateStockAdjustment)
+			stockAdjustmentGroup.DELETE("/:id", r.stockAdjustmentHandler.DeleteStockAdjustment)
+			stockAdjustmentGroup.POST("/:id/approve", r.stockAdjustmentHandler.ApproveStockAdjustment)
+		}
+
+		// Supplier Payment management
+		supplierPaymentGroup := inventoryGroup.Group("/supplier-payments")
+		{
+			supplierPaymentGroup.POST("", r.supplierPaymentHandler.CreateSupplierPayment)
+			supplierPaymentGroup.GET("", r.supplierPaymentHandler.GetSupplierPayments)
+			supplierPaymentGroup.GET("/:id", r.supplierPaymentHandler.GetSupplierPayment)
+			supplierPaymentGroup.PUT("/:id", r.supplierPaymentHandler.UpdateSupplierPayment)
+			supplierPaymentGroup.DELETE("/:id", r.supplierPaymentHandler.DeleteSupplierPayment)
+		}
+	}
+
+	// Additional cross-entity routes
+	v1.Group("/suppliers").Use(middleware.AuthMiddleware(r.jwtManager, r.sessionRepo)).Use(middleware.RequireRole("admin", "inventory")).
+		GET("/:supplier_id/payments", r.supplierPaymentHandler.GetPaymentsBySupplier)
 
 	return router
 }

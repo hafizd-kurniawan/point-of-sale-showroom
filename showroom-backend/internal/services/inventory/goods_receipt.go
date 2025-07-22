@@ -53,8 +53,13 @@ func (s *GoodsReceiptService) CreateGoodsReceipt(ctx context.Context, req *inven
 		return nil, fmt.Errorf("purchase order is not in a receivable state")
 	}
 
-	// Generate receipt number
-	receiptNumber, err := s.codeGenerator.GenerateGoodsReceiptNumber(ctx)
+	// Generate receipt number  
+	getLastReceiptID := func() (int, error) {
+		// Get the last receipt ID from database
+		return s.goodsReceiptRepo.GetLastReceiptID(ctx)
+	}
+	
+	receiptNumber, err := s.codeGenerator.GetNextReceiptNumber(getLastReceiptID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate receipt number: %w", err)
 	}
@@ -121,17 +126,21 @@ func (s *GoodsReceiptService) CreateGoodsReceipt(ctx context.Context, req *inven
 
 		// Create stock movement for accepted items
 		if detail.QuantityAccepted > 0 {
+			referenceID := createdReceipt.ReceiptID
+			movementReason := "Goods Receipt"
+			notes := fmt.Sprintf("Receipt #%s", receiptNumber)
+			
 			movement := &inventory.StockMovement{
 				ProductID:       detail.ProductID,
 				MovementType:    inventory.MovementTypeIn,
 				ReferenceType:   inventory.ReferenceTypePurchase,
-				ReferenceID:     createdReceipt.ReceiptID,
+				ReferenceID:     &referenceID,
 				QuantityMoved:   detail.QuantityAccepted,
 				UnitCost:        detail.UnitCost,
 				MovementDate:    time.Now(),
 				ProcessedBy:     userID,
-				MovementReason:  "Goods Receipt",
-				Notes:           fmt.Sprintf("Receipt #%s", receiptNumber),
+				MovementReason:  &movementReason,
+				Notes:           &notes,
 			}
 
 			// Get current stock to calculate before/after quantities

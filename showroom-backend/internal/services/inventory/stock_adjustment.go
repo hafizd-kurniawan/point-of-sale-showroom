@@ -236,18 +236,21 @@ func (s *StockAdjustmentService) createAdjustmentMovement(ctx context.Context, a
 		quantityMoved = -quantityMoved // Make positive for movement
 	}
 
+	referenceID := adjustment.AdjustmentID
+	movementReason := fmt.Sprintf("Stock Adjustment - %s", adjustment.AdjustmentType)
+	
 	movement := &inventory.StockMovement{
 		ProductID:       adjustment.ProductID,
 		MovementType:    movementType,
 		ReferenceType:   inventory.ReferenceTypeAdjustment,
-		ReferenceID:     adjustment.AdjustmentID,
+		ReferenceID:     &referenceID,
 		QuantityBefore:  adjustment.QuantitySystem,
 		QuantityMoved:   quantityMoved,
 		QuantityAfter:   adjustment.QuantityPhysical,
 		UnitCost:        product.CostPrice,
 		MovementDate:    time.Now(),
 		ProcessedBy:     approverID,
-		MovementReason:  fmt.Sprintf("Stock Adjustment - %s", adjustment.AdjustmentType),
+		MovementReason:  &movementReason,
 		Notes:           adjustment.Notes,
 	}
 

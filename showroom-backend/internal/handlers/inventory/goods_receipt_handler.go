@@ -6,17 +6,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
-	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/inventory"
-	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/inventory"
+	inventoryModels "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/inventory"
+	inventoryServices "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/inventory"
 )
 
 // GoodsReceiptHandler handles HTTP requests for goods receipts
 type GoodsReceiptHandler struct {
-	goodsReceiptService *inventory.GoodsReceiptService
+	goodsReceiptService *inventoryServices.GoodsReceiptService
 }
 
 // NewGoodsReceiptHandler creates a new goods receipt handler
-func NewGoodsReceiptHandler(goodsReceiptService *inventory.GoodsReceiptService) *GoodsReceiptHandler {
+func NewGoodsReceiptHandler(goodsReceiptService *inventoryServices.GoodsReceiptService) *GoodsReceiptHandler {
 	return &GoodsReceiptHandler{
 		goodsReceiptService: goodsReceiptService,
 	}
@@ -24,7 +24,7 @@ func NewGoodsReceiptHandler(goodsReceiptService *inventory.GoodsReceiptService) 
 
 // CreateGoodsReceipt handles POST /goods-receipts
 func (h *GoodsReceiptHandler) CreateGoodsReceipt(c *gin.Context) {
-	var req inventory.GoodsReceiptCreateRequest
+	var req inventoryModels.GoodsReceiptCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Status:  "error",
@@ -100,13 +100,13 @@ func (h *GoodsReceiptHandler) ListGoodsReceipts(c *gin.Context) {
 	}
 
 	// Parse filter parameters
-	params := &inventory.GoodsReceiptFilterParams{}
+	params := &inventoryModels.GoodsReceiptFilterParams{}
 	params.Page = page
 	params.Limit = limit
 
 	// Parse status filter
 	if status := c.Query("status"); status != "" {
-		receiptStatus := inventory.ReceiptStatus(status)
+		receiptStatus := inventoryModels.ReceiptStatus(status)
 		params.ReceiptStatus = &receiptStatus
 	}
 
@@ -127,17 +127,19 @@ func (h *GoodsReceiptHandler) ListGoodsReceipts(c *gin.Context) {
 
 	// Calculate pagination info
 	totalPages := (total + limit - 1) / limit
+	hasMore := page < totalPages
 
-	c.JSON(http.StatusOK, common.SuccessResponse{
-		Status: "success",
-		Data:   receipts,
-		Meta: map[string]interface{}{
-			"page":       page,
-			"limit":      limit,
-			"total":      total,
-			"totalPages": totalPages,
-		},
-	})
+	meta := common.PaginationMeta{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+		HasMore:    hasMore,
+	}
+
+	c.JSON(http.StatusOK, common.NewPaginationResponse(
+		"Goods receipts retrieved successfully", receipts, meta,
+	))
 }
 
 // UpdateGoodsReceipt handles PUT /goods-receipts/:id
@@ -153,7 +155,7 @@ func (h *GoodsReceiptHandler) UpdateGoodsReceipt(c *gin.Context) {
 		return
 	}
 
-	var req inventory.GoodsReceiptUpdateRequest
+	var req inventoryModels.GoodsReceiptUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Status:  "error",

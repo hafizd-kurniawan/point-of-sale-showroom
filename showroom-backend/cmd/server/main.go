@@ -16,10 +16,12 @@ import (
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/database"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/admin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/auth"
+	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/inventory"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/implementations"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/interfaces"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/routes"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services"
+	inventoryService "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/inventory"
 	masterService "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/master"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/utils"
 )
@@ -96,6 +98,16 @@ type Dependencies struct {
 	vehicleModelRepo      interfaces.VehicleModelRepository
 	productCategoryRepo   interfaces.ProductCategoryRepository
 	
+	// Inventory Repositories
+	productRepo            interfaces.ProductSparePartRepository
+	purchaseOrderRepo      interfaces.PurchaseOrderRepository
+	purchaseOrderDetailRepo interfaces.PurchaseOrderDetailRepository
+	goodsReceiptRepo       interfaces.GoodsReceiptRepository
+	goodsReceiptDetailRepo interfaces.GoodsReceiptDetailRepository
+	stockMovementRepo      interfaces.StockMovementRepository
+	stockAdjustmentRepo    interfaces.StockAdjustmentRepository
+	supplierPaymentRepo    interfaces.SupplierPaymentRepository
+	
 	// Services
 	authService           *services.AuthService
 	userService           *services.UserService
@@ -106,6 +118,14 @@ type Dependencies struct {
 	vehicleModelService   *masterService.VehicleModelService
 	productCategoryService *masterService.ProductCategoryService
 	
+	// Inventory Services
+	productService         *inventoryService.ProductService
+	purchaseOrderService   *inventoryService.PurchaseOrderService
+	goodsReceiptService    *inventoryService.GoodsReceiptService
+	stockMovementService   *inventoryService.StockMovementService
+	stockAdjustmentService *inventoryService.StockAdjustmentService
+	supplierPaymentService *inventoryService.SupplierPaymentService
+	
 	// Handlers
 	authHandler           *auth.Handler
 	adminHandler          *admin.Handler
@@ -113,6 +133,14 @@ type Dependencies struct {
 	supplierHandler       *admin.SupplierHandler
 	vehicleMasterHandler  *admin.VehicleMasterHandler
 	productCategoryHandler *admin.ProductCategoryHandler
+	
+	// Inventory Handlers
+	productHandler         *inventory.ProductHandler
+	purchaseOrderHandler   *inventory.PurchaseOrderHandler
+	goodsReceiptHandler    *inventory.GoodsReceiptHandler
+	stockMovementHandler   *inventory.StockMovementHandler
+	stockAdjustmentHandler *inventory.StockAdjustmentHandler
+	supplierPaymentHandler *inventory.SupplierPaymentHandler
 	
 	// Utils
 	jwtManager            *utils.JWTManager
@@ -153,6 +181,16 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 	vehicleModelRepo := implementations.NewVehicleModelRepository(db)
 	productCategoryRepo := implementations.NewProductCategoryRepository(db)
 
+	// Initialize inventory repositories
+	productRepo := implementations.NewProductSparePartRepository(db)
+	purchaseOrderRepo := implementations.NewPurchaseOrderRepository(db)
+	purchaseOrderDetailRepo := implementations.NewPurchaseOrderDetailRepository(db)
+	goodsReceiptRepo := implementations.NewGoodsReceiptRepository(db)
+	goodsReceiptDetailRepo := implementations.NewGoodsReceiptDetailRepository(db)
+	stockMovementRepo := implementations.NewStockMovementRepository(db)
+	stockAdjustmentRepo := implementations.NewStockAdjustmentRepository(db)
+	supplierPaymentRepo := implementations.NewSupplierPaymentRepository(db)
+
 	// Initialize JWT manager
 	jwtManager := utils.NewJWTManager(cfg.JWT.SecretKey, cfg.JWT.GetExpiration())
 
@@ -166,6 +204,14 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 	vehicleModelService := masterService.NewVehicleModelService(vehicleModelRepo, vehicleBrandRepo, vehicleCategoryRepo)
 	productCategoryService := masterService.NewProductCategoryService(productCategoryRepo)
 
+	// Initialize inventory services
+	productService := inventoryService.NewProductService(productRepo, productCategoryRepo, stockMovementRepo)
+	purchaseOrderService := inventoryService.NewPurchaseOrderService(purchaseOrderRepo, purchaseOrderDetailRepo, supplierRepo, productRepo)
+	goodsReceiptService := inventoryService.NewGoodsReceiptService(goodsReceiptRepo, goodsReceiptDetailRepo, purchaseOrderRepo, purchaseOrderDetailRepo, stockMovementRepo)
+	stockMovementService := inventoryService.NewStockMovementService(stockMovementRepo, productRepo)
+	stockAdjustmentService := inventoryService.NewStockAdjustmentService(stockAdjustmentRepo, productRepo, stockMovementRepo, userRepo)
+	supplierPaymentService := inventoryService.NewSupplierPaymentService(supplierPaymentRepo, supplierRepo, purchaseOrderRepo)
+
 	// Initialize handlers
 	authHandler := auth.NewHandler(authService)
 	adminHandler := admin.NewHandler(userService)
@@ -173,6 +219,14 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 	supplierHandler := admin.NewSupplierHandler(supplierService)
 	vehicleMasterHandler := admin.NewVehicleMasterHandler(vehicleBrandService, vehicleCategoryService, vehicleModelService)
 	productCategoryHandler := admin.NewProductCategoryHandler(productCategoryService)
+
+	// Initialize inventory handlers
+	productHandler := inventory.NewProductHandler(productService)
+	purchaseOrderHandler := inventory.NewPurchaseOrderHandler(purchaseOrderService)
+	goodsReceiptHandler := inventory.NewGoodsReceiptHandler(goodsReceiptService)
+	stockMovementHandler := inventory.NewStockMovementHandler(stockMovementService)
+	stockAdjustmentHandler := inventory.NewStockAdjustmentHandler(stockAdjustmentService)
+	supplierPaymentHandler := inventory.NewSupplierPaymentHandler(supplierPaymentService)
 
 	// Initialize router
 	router := routes.NewRouter(
@@ -182,6 +236,12 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 		supplierHandler,
 		vehicleMasterHandler,
 		productCategoryHandler,
+		productHandler,
+		purchaseOrderHandler,
+		goodsReceiptHandler,
+		stockMovementHandler,
+		stockAdjustmentHandler,
+		supplierPaymentHandler,
 		jwtManager,
 		sessionRepo,
 		cfg,
@@ -196,6 +256,14 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 		vehicleCategoryRepo:    vehicleCategoryRepo,
 		vehicleModelRepo:       vehicleModelRepo,
 		productCategoryRepo:    productCategoryRepo,
+		productRepo:            productRepo,
+		purchaseOrderRepo:      purchaseOrderRepo,
+		purchaseOrderDetailRepo: purchaseOrderDetailRepo,
+		goodsReceiptRepo:       goodsReceiptRepo,
+		goodsReceiptDetailRepo: goodsReceiptDetailRepo,
+		stockMovementRepo:      stockMovementRepo,
+		stockAdjustmentRepo:    stockAdjustmentRepo,
+		supplierPaymentRepo:    supplierPaymentRepo,
 		authService:            authService,
 		userService:            userService,
 		customerService:        customerService,
@@ -204,12 +272,24 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 		vehicleCategoryService: vehicleCategoryService,
 		vehicleModelService:    vehicleModelService,
 		productCategoryService: productCategoryService,
+		productService:         productService,
+		purchaseOrderService:   purchaseOrderService,
+		goodsReceiptService:    goodsReceiptService,
+		stockMovementService:   stockMovementService,
+		stockAdjustmentService: stockAdjustmentService,
+		supplierPaymentService: supplierPaymentService,
 		authHandler:            authHandler,
 		adminHandler:           adminHandler,
 		customerHandler:        customerHandler,
 		supplierHandler:        supplierHandler,
 		vehicleMasterHandler:   vehicleMasterHandler,
 		productCategoryHandler: productCategoryHandler,
+		productHandler:         productHandler,
+		purchaseOrderHandler:   purchaseOrderHandler,
+		goodsReceiptHandler:    goodsReceiptHandler,
+		stockMovementHandler:   stockMovementHandler,
+		stockAdjustmentHandler: stockAdjustmentHandler,
+		supplierPaymentHandler: supplierPaymentHandler,
 		jwtManager:             jwtManager,
 		router:                 router,
 	}

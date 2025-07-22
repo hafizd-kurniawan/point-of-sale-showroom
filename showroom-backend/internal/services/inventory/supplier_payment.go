@@ -40,7 +40,12 @@ func (s *SupplierPaymentService) CreateSupplierPayment(ctx context.Context, req 
 	}
 
 	// Generate payment number
-	paymentNumber, err := s.codeGenerator.GenerateSupplierPaymentNumber(ctx)
+	getLastPaymentID := func() (int, error) {
+		// Get the last payment ID from database
+		return s.supplierPaymentRepo.GetLastPaymentID(ctx)
+	}
+	
+	paymentNumber, err := s.codeGenerator.GetNextPaymentNumber(getLastPaymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate payment number: %w", err)
 	}

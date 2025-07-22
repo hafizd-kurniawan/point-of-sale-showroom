@@ -7,17 +7,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/middleware"
-	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/inventory"
-	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/inventory"
+	inventoryModels "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/inventory"
+	inventoryServices "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/inventory"
 )
 
 // ProductHandler handles product HTTP requests
 type ProductHandler struct {
-	productService *inventory.ProductService
+	productService *inventoryServices.ProductService
 }
 
 // NewProductHandler creates a new product handler
-func NewProductHandler(productService *inventory.ProductService) *ProductHandler {
+func NewProductHandler(productService *inventoryServices.ProductService) *ProductHandler {
 	return &ProductHandler{
 		productService: productService,
 	}
@@ -30,13 +30,13 @@ func NewProductHandler(productService *inventory.ProductService) *ProductHandler
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param request body inventory.ProductSparePartCreateRequest true "Create product request"
-// @Success 201 {object} common.APIResponse{data=inventory.ProductSparePart}
+// @Param request body inventoryModels.ProductSparePartCreateRequest true "Create product request"
+// @Success 201 {object} common.APIResponse{data=inventoryModels.ProductSparePart}
 // @Failure 400 {object} common.ErrorResponse
 // @Failure 401 {object} common.ErrorResponse
 // @Router /inventory/products [post]
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
-	var req inventory.ProductSparePartCreateRequest
+	var req inventoryModels.ProductSparePartCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, common.NewValidationErrorResponse(
 			"Validation failed", "Invalid request data", err.Error(),
@@ -72,7 +72,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 // @Security BearerAuth
 // @Produce json
 // @Param id path int true "Product ID"
-// @Success 200 {object} common.APIResponse{data=inventory.ProductSparePart}
+// @Success 200 {object} common.APIResponse{data=inventoryModels.ProductSparePart}
 // @Failure 400 {object} common.ErrorResponse
 // @Failure 404 {object} common.ErrorResponse
 // @Router /inventory/products/{id} [get]
@@ -106,7 +106,7 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 // @Security BearerAuth
 // @Produce json
 // @Param code path string true "Product Code"
-// @Success 200 {object} common.APIResponse{data=inventory.ProductSparePart}
+// @Success 200 {object} common.APIResponse{data=inventoryModels.ProductSparePart}
 // @Failure 400 {object} common.ErrorResponse
 // @Failure 404 {object} common.ErrorResponse
 // @Router /inventory/products/code/{code} [get]
@@ -139,7 +139,7 @@ func (h *ProductHandler) GetProductByCode(c *gin.Context) {
 // @Security BearerAuth
 // @Produce json
 // @Param barcode path string true "Product Barcode"
-// @Success 200 {object} common.APIResponse{data=inventory.ProductSparePart}
+// @Success 200 {object} common.APIResponse{data=inventoryModels.ProductSparePart}
 // @Failure 400 {object} common.ErrorResponse
 // @Failure 404 {object} common.ErrorResponse
 // @Router /inventory/products/barcode/{barcode} [get]
@@ -173,8 +173,8 @@ func (h *ProductHandler) GetProductByBarcode(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Product ID"
-// @Param request body inventory.ProductSparePartUpdateRequest true "Update product request"
-// @Success 200 {object} common.APIResponse{data=inventory.ProductSparePart}
+// @Param request body inventoryModels.ProductSparePartUpdateRequest true "Update product request"
+// @Success 200 {object} common.APIResponse{data=inventoryModels.ProductSparePart}
 // @Failure 400 {object} common.ErrorResponse
 // @Failure 404 {object} common.ErrorResponse
 // @Router /inventory/products/{id} [put]
@@ -188,7 +188,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	var req inventory.ProductSparePartUpdateRequest
+	var req inventoryModels.ProductSparePartUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, common.NewValidationErrorResponse(
 			"Validation failed", "Invalid request data", err.Error(),
@@ -257,11 +257,11 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 // @Param location_rack query string false "Location filter"
 // @Param low_stock query bool false "Low stock filter"
 // @Param is_active query bool false "Active status filter"
-// @Success 200 {object} common.PaginatedResponse{data=[]inventory.ProductSparePartListItem}
+// @Success 200 {object} common.PaginatedResponse{data=[]inventoryModels.ProductSparePartListItem}
 // @Failure 400 {object} common.ErrorResponse
 // @Router /inventory/products [get]
 func (h *ProductHandler) GetProducts(c *gin.Context) {
-	var params inventory.ProductSparePartFilterParams
+	var params inventoryModels.ProductSparePartFilterParams
 	if err := c.ShouldBindQuery(&params); err != nil {
 		c.JSON(http.StatusBadRequest, common.NewValidationErrorResponse(
 			"Invalid query parameters", "Invalid filter parameters", err.Error(),
@@ -277,7 +277,7 @@ func (h *ProductHandler) GetProducts(c *gin.Context) {
 		return
 	}
 
-	response := common.NewPaginatedResponse(
+	response := common.NewPaginationResponse(
 		"Products retrieved successfully",
 		products,
 		total,
@@ -296,7 +296,7 @@ func (h *ProductHandler) GetProducts(c *gin.Context) {
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
-// @Success 200 {object} common.PaginatedResponse{data=[]inventory.ProductSparePartListItem}
+// @Success 200 {object} common.PaginatedResponse{data=[]inventoryModels.ProductSparePartListItem}
 // @Failure 400 {object} common.ErrorResponse
 // @Router /inventory/products/low-stock [get]
 func (h *ProductHandler) GetLowStockProducts(c *gin.Context) {
@@ -311,7 +311,7 @@ func (h *ProductHandler) GetLowStockProducts(c *gin.Context) {
 		return
 	}
 
-	response := common.NewPaginatedResponse(
+	response := common.NewPaginationResponse(
 		"Low stock products retrieved successfully",
 		products,
 		total,
@@ -331,7 +331,7 @@ func (h *ProductHandler) GetLowStockProducts(c *gin.Context) {
 // @Param q query string true "Search query"
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Items per page" default(10)
-// @Success 200 {object} common.PaginatedResponse{data=[]inventory.ProductSparePartListItem}
+// @Success 200 {object} common.PaginatedResponse{data=[]inventoryModels.ProductSparePartListItem}
 // @Failure 400 {object} common.ErrorResponse
 // @Router /inventory/products/search [get]
 func (h *ProductHandler) SearchProducts(c *gin.Context) {
@@ -354,7 +354,7 @@ func (h *ProductHandler) SearchProducts(c *gin.Context) {
 		return
 	}
 
-	response := common.NewPaginatedResponse(
+	response := common.NewPaginationResponse(
 		"Product search completed successfully",
 		products,
 		total,

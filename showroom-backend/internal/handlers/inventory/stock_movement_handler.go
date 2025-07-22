@@ -6,17 +6,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
-	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/inventory"
-	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/inventory"
+	inventoryModels "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/inventory"
+	inventoryServices "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/inventory"
 )
 
 // StockMovementHandler handles HTTP requests for stock movements
 type StockMovementHandler struct {
-	stockMovementService *inventory.StockMovementService
+	stockMovementService *inventoryServices.StockMovementService
 }
 
 // NewStockMovementHandler creates a new stock movement handler
-func NewStockMovementHandler(stockMovementService *inventory.StockMovementService) *StockMovementHandler {
+func NewStockMovementHandler(stockMovementService *inventoryServices.StockMovementService) *StockMovementHandler {
 	return &StockMovementHandler{
 		stockMovementService: stockMovementService,
 	}
@@ -65,7 +65,7 @@ func (h *StockMovementHandler) ListStockMovements(c *gin.Context) {
 	}
 
 	// Parse filter parameters
-	params := &inventory.StockMovementFilterParams{}
+	params := &inventoryModels.StockMovementFilterParams{}
 	params.Page = page
 	params.Limit = limit
 
@@ -78,7 +78,7 @@ func (h *StockMovementHandler) ListStockMovements(c *gin.Context) {
 
 	// Parse movement type filter
 	if movementType := c.Query("movement_type"); movementType != "" {
-		mt := inventory.MovementType(movementType)
+		mt := inventoryModels.MovementType(movementType)
 		params.MovementType = &mt
 	}
 
