@@ -280,7 +280,7 @@ func (r *SupplierRepository) List(ctx context.Context, params *master.SupplierFi
 
 	return &common.PaginatedResponse{
 		Data:       suppliers,
-		Total:      total,
+		Total: int(total),
 		Page:       params.Page,
 		Limit:      params.Limit,
 		TotalPages: params.GetTotalPages(total),

@@ -327,7 +327,7 @@ func (r *ProductSparePartRepository) List(ctx context.Context, params *products.
 
 	return &common.PaginatedResponse{
 		Data:       items,
-Total:      total,
+Total: int(total),
 Page:       params.Page,
 Limit:      params.Limit,
 TotalPages: params.GetTotalPages(total),
@@ -417,7 +417,7 @@ func (r *ProductSparePartRepository) GetLowStockProducts(ctx context.Context, pa
 
 	return &common.PaginatedResponse{
 		Data:       items,
-Total:      total,
+Total: int(total),
 Page:       params.Page,
 Limit:      params.Limit,
 TotalPages: params.GetTotalPages(total),
