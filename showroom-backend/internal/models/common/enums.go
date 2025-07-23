@@ -10,17 +10,15 @@ import (
 type UserRole string
 
 const (
-	RoleAdmin    UserRole = "admin"
-	RoleSales    UserRole = "sales"
-	RoleCashier  UserRole = "cashier"
-	RoleMechanic UserRole = "mechanic"
-	RoleManager  UserRole = "manager"
+	RoleSuperAdmin UserRole = "super_admin"  // Full system management
+	RoleKasir      UserRole = "kasir"        // Operational: purchase, sales, approvals
+	RoleMekanik    UserRole = "mekanik"      // Repair work, damage assessment, parts usage
 )
 
 // IsValid checks if the user role is valid
 func (r UserRole) IsValid() bool {
 	switch r {
-	case RoleAdmin, RoleSales, RoleCashier, RoleMechanic, RoleManager:
+	case RoleSuperAdmin, RoleKasir, RoleMekanik:
 		return true
 	default:
 		return false

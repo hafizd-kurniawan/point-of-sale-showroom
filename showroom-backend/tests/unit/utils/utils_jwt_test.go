@@ -17,7 +17,7 @@ func TestJWTManager_GenerateToken(t *testing.T) {
 		UserID:    1,
 		Username:  "testuser",
 		Email:     "test@example.com",
-		Role:      common.RoleAdmin,
+		Role:      common.RoleSuperAdmin,
 		SessionID: 123,
 	}
 
@@ -34,7 +34,7 @@ func TestJWTManager_ValidateToken(t *testing.T) {
 		UserID:    1,
 		Username:  "testuser",
 		Email:     "test@example.com",
-		Role:      common.RoleAdmin,
+		Role:      common.RoleSuperAdmin,
 		SessionID: 123,
 	}
 
@@ -64,7 +64,7 @@ func TestJWTManager_ValidateToken_ExpiredToken(t *testing.T) {
 		UserID:    1,
 		Username:  "testuser",
 		Email:     "test@example.com",
-		Role:      common.RoleAdmin,
+		Role:      common.RoleSuperAdmin,
 		SessionID: 123,
 	}
 

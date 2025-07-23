@@ -12,11 +12,9 @@ func TestUserRole_IsValid(t *testing.T) {
 		role  common.UserRole
 		valid bool
 	}{
-		{common.RoleAdmin, true},
-		{common.RoleSales, true},
-		{common.RoleCashier, true},
-		{common.RoleMechanic, true},
-		{common.RoleManager, true},
+		{common.RoleSuperAdmin, true},
+		{common.RoleKasir, true},
+		{common.RoleMekanik, true},
 		{common.UserRole("invalid"), false},
 		{common.UserRole(""), false},
 	}
@@ -27,11 +25,9 @@ func TestUserRole_IsValid(t *testing.T) {
 }
 
 func TestUserRole_String(t *testing.T) {
-	assert.Equal(t, "admin", common.RoleAdmin.String())
-	assert.Equal(t, "sales", common.RoleSales.String())
-	assert.Equal(t, "cashier", common.RoleCashier.String())
-	assert.Equal(t, "mechanic", common.RoleMechanic.String())
-	assert.Equal(t, "manager", common.RoleManager.String())
+	assert.Equal(t, "super_admin", common.RoleSuperAdmin.String())
+	assert.Equal(t, "kasir", common.RoleKasir.String())
+	assert.Equal(t, "mekanik", common.RoleMekanik.String())
 }
 
 func TestPaginationParams_Validate(t *testing.T) {

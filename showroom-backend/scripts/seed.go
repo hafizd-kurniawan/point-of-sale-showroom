@@ -65,7 +65,7 @@ func seedUsers(userRepo interfaces.UserRepository) error {
 		FullName:     "System Administrator",
 		Phone:        "081234567890",
 		Address:      stringPtr("Jl. Admin Street No. 1, Jakarta"),
-		Role:         common.RoleAdmin,
+		Role:         common.RoleSuperAdmin,
 		Salary:       float64Ptr(15000000),
 		HireDate:     &hireDate,
 		CreatedBy:    1, // Self-reference, will be updated after creation
@@ -112,10 +112,8 @@ func seedUsers(userRepo interfaces.UserRepository) error {
 		role     common.UserRole
 		salary   float64
 	}{
-		{"kasir1", "kasir1@showroom.com", "kasir123", "Siti Kasir", "081234567891", common.RoleCashier, 5000000},
-		{"mekanik1", "mekanik1@showroom.com", "mekanik123", "Budi Mekanik", "081234567892", common.RoleMechanic, 6000000},
-		{"sales1", "sales1@showroom.com", "sales123", "Ahmad Sales", "081234567893", common.RoleSales, 7000000},
-		{"manager1", "manager1@showroom.com", "manager123", "Rina Manager", "081234567894", common.RoleManager, 10000000},
+		{"kasir1", "kasir1@showroom.com", "kasir123", "Siti Kasir", "081234567891", common.RoleKasir, 5000000},
+		{"mekanik1", "mekanik1@showroom.com", "mekanik123", "Budi Mekanik", "081234567892", common.RoleMekanik, 6000000},
 	}
 
 	for _, testUser := range testUsers {
