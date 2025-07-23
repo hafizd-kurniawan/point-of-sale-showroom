@@ -5,6 +5,8 @@ import '../../bloc/auth/auth_bloc.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/dashboard_card.dart';
 import '../../../core/theme/app_theme.dart';
+import 'parts_inventory_page.dart';
+import 'work_orders_page.dart';
 
 class MechanicDashboardPage extends StatelessWidget {
   const MechanicDashboardPage({super.key});
@@ -109,21 +111,25 @@ class MechanicDashboardPage extends StatelessWidget {
                     icon: Icons.build_circle,
                     color: AppTheme.warningColor,
                     onTap: () {
-                      // TODO: Navigate to repair queue
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Repair Queue - Coming Soon')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const WorkOrdersPage(),
+                        ),
                       );
                     },
                   ),
                   DashboardCard(
-                    title: 'Parts Request',
-                    subtitle: 'Request spare parts',
-                    icon: Icons.inventory_2,
+                    title: 'Parts Inventory',
+                    subtitle: 'Browse spare parts',
+                    icon: Icons.inventory,
                     color: AppTheme.primaryColor,
                     onTap: () {
-                      // TODO: Navigate to parts request
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Parts Request - Coming Soon')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MechanicPartsInventoryPage(),
+                        ),
                       );
                     },
                   ),

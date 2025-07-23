@@ -5,6 +5,7 @@ import '../../bloc/auth/auth_bloc.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/dashboard_card.dart';
 import '../../../core/theme/app_theme.dart';
+import 'product_inventory_page.dart';
 
 class CashierDashboardPage extends StatelessWidget {
   const CashierDashboardPage({super.key});
@@ -128,14 +129,16 @@ class CashierDashboardPage extends StatelessWidget {
                     },
                   ),
                   DashboardCard(
-                    title: 'Transaction History',
-                    subtitle: 'View past transactions',
-                    icon: Icons.history,
-                    color: AppTheme.accentColor,
+                    title: 'Product Inventory',
+                    subtitle: 'Browse available products',
+                    icon: Icons.inventory_2,
+                    color: AppTheme.infoColor,
                     onTap: () {
-                      // TODO: Navigate to transaction history
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Transaction History - Coming Soon')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProductInventoryPage(),
+                        ),
                       );
                     },
                   ),
