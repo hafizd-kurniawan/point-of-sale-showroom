@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
+	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/middleware"
 	inventoryModels "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/inventory"
 	inventoryServices "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/inventory"
 )
@@ -34,7 +35,18 @@ func (h *SupplierPaymentHandler) CreateSupplierPayment(c *gin.Context) {
 		return
 	}
 
-	payment, err := h.supplierPaymentService.CreateSupplierPayment(&req)
+	// Get user ID from context
+	userID := middleware.GetCurrentUserID(c)
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, common.ErrorResponse{
+			Status:  "error",
+			Message: "Unauthorized",
+			Error:   "Invalid authentication",
+		})
+		return
+	}
+
+	payment, err := h.supplierPaymentService.CreateSupplierPayment(c.Request.Context(), &req, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Status:  "error",
@@ -63,7 +75,7 @@ func (h *SupplierPaymentHandler) GetSupplierPayment(c *gin.Context) {
 		return
 	}
 
-	payment, err := h.supplierPaymentService.GetSupplierPaymentByID(id)
+	payment, err := h.supplierPaymentService.GetSupplierPayment(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, common.ErrorResponse{
 			Status:  "error",
@@ -82,7 +94,7 @@ func (h *SupplierPaymentHandler) GetSupplierPayment(c *gin.Context) {
 
 // GetSupplierPayments handles GET /supplier-payments
 func (h *SupplierPaymentHandler) GetSupplierPayments(c *gin.Context) {
-	var filter inventoryModels.SupplierPaymentFilter
+	var filter inventoryModels.SupplierPaymentFilterParams
 
 	// Parse query parameters
 	if supplierIDStr := c.Query("supplier_id"); supplierIDStr != "" {
@@ -95,16 +107,18 @@ func (h *SupplierPaymentHandler) GetSupplierPayments(c *gin.Context) {
 	if poIDStr := c.Query("po_id"); poIDStr != "" {
 		poID, err := strconv.Atoi(poIDStr)
 		if err == nil {
-			filter.POID = &poID
+			filter.PoID = &poID
 		}
 	}
 
 	if status := c.Query("status"); status != "" {
-		filter.Status = &status
+		paymentStatus := inventoryModels.PaymentStatus(status)
+		filter.PaymentStatus = &paymentStatus
 	}
 
 	if method := c.Query("method"); method != "" {
-		filter.PaymentMethod = &method
+		paymentMethod := inventoryModels.PaymentMethod(method)
+		filter.PaymentMethod = &paymentMethod
 	}
 
 	// Parse pagination
@@ -122,7 +136,7 @@ func (h *SupplierPaymentHandler) GetSupplierPayments(c *gin.Context) {
 		}
 	}
 
-	payments, total, err := h.supplierPaymentService.GetSupplierPayments(&filter, page, limit)
+	payments, total, err := h.supplierPaymentService.ListSupplierPayments(c.Request.Context(), &filter)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Status:  "error",
@@ -170,7 +184,7 @@ func (h *SupplierPaymentHandler) UpdateSupplierPayment(c *gin.Context) {
 		return
 	}
 
-	payment, err := h.supplierPaymentService.UpdateSupplierPayment(id, &req)
+	payment, err := h.supplierPaymentService.UpdateSupplierPayment(c.Request.Context(), id, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Status:  "error",
@@ -199,7 +213,7 @@ func (h *SupplierPaymentHandler) DeleteSupplierPayment(c *gin.Context) {
 		return
 	}
 
-	err = h.supplierPaymentService.DeleteSupplierPayment(id)
+	err = h.supplierPaymentService.DeleteSupplierPayment(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Status:  "error",
@@ -227,7 +241,7 @@ func (h *SupplierPaymentHandler) GetPaymentsBySupplier(c *gin.Context) {
 		return
 	}
 
-	filter := inventoryModels.SupplierPaymentFilter{
+	filter := inventoryModels.SupplierPaymentFilterParams{
 		SupplierID: &supplierID,
 	}
 
@@ -246,7 +260,7 @@ func (h *SupplierPaymentHandler) GetPaymentsBySupplier(c *gin.Context) {
 		}
 	}
 
-	payments, total, err := h.supplierPaymentService.GetSupplierPayments(&filter, page, limit)
+	payments, total, err := h.supplierPaymentService.ListSupplierPayments(c.Request.Context(), &filter)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Status:  "error",

@@ -99,17 +99,19 @@ func (h *StockMovementHandler) ListStockMovements(c *gin.Context) {
 
 	// Calculate pagination info
 	totalPages := (total + limit - 1) / limit
+	hasMore := page < totalPages
 
-	c.JSON(http.StatusOK, common.SuccessResponse{
-		Status: "success",
-		Data:   movements,
-		Meta: map[string]interface{}{
-			"page":       page,
-			"limit":      limit,
-			"total":      total,
-			"totalPages": totalPages,
-		},
-	})
+	meta := common.PaginationMeta{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+		HasMore:    hasMore,
+	}
+
+	c.JSON(http.StatusOK, common.NewPaginationResponse(
+		"Stock movements retrieved successfully", movements, meta,
+	))
 }
 
 // GetProductStockHistory handles GET /stock-movements/product/:id/history
@@ -148,17 +150,19 @@ func (h *StockMovementHandler) GetProductStockHistory(c *gin.Context) {
 
 	// Calculate pagination info
 	totalPages := (total + limit - 1) / limit
+	hasMore := page < totalPages
 
-	c.JSON(http.StatusOK, common.SuccessResponse{
-		Status: "success",
-		Data:   movements,
-		Meta: map[string]interface{}{
-			"page":       page,
-			"limit":      limit,
-			"total":      total,
-			"totalPages": totalPages,
-		},
-	})
+	meta := common.PaginationMeta{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+		HasMore:    hasMore,
+	}
+
+	c.JSON(http.StatusOK, common.NewPaginationResponse(
+		"Product stock history retrieved successfully", movements, meta,
+	))
 }
 
 // CreateManualAdjustment handles POST /stock-movements/adjustment

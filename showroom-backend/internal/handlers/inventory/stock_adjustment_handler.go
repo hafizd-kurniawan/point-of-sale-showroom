@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
+	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/middleware"
 	inventoryModels "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/inventory"
 	inventoryServices "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/inventory"
 )
@@ -95,6 +96,10 @@ func (h *StockAdjustmentHandler) GetStockAdjustment(c *gin.Context) {
 func (h *StockAdjustmentHandler) GetStockAdjustments(c *gin.Context) {
 	var params inventoryModels.StockAdjustmentFilterParams
 
+	// Parse pagination parameters
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
 	// Parse query parameters
 	if productIDStr := c.Query("product_id"); productIDStr != "" {
 		productID, err := strconv.Atoi(productIDStr)
@@ -124,20 +129,21 @@ func (h *StockAdjustmentHandler) GetStockAdjustments(c *gin.Context) {
 		})
 		return
 	}
-totalPages := (total + limit - 1) / limit
-hasMore := page < totalPages
+	
+	totalPages := (total + limit - 1) / limit
+	hasMore := page < totalPages
 
-meta := common.PaginationMeta{
-Page:       page,
-Limit:      limit,
-Total:      total,
-TotalPages: totalPages,
-HasMore:    hasMore,
-}
+	meta := common.PaginationMeta{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+		HasMore:    hasMore,
+	}
 
-c.JSON(http.StatusOK, common.NewPaginationResponse(
-"Stock adjustments retrieved successfully", adjustments, meta,
-))
+	c.JSON(http.StatusOK, common.NewPaginationResponse(
+		"Stock adjustments retrieved successfully", adjustments, meta,
+	))
 }
 
 // UpdateStockAdjustment handles PUT /stock-adjustments/:id
@@ -162,7 +168,7 @@ func (h *StockAdjustmentHandler) UpdateStockAdjustment(c *gin.Context) {
 		return
 	}
 
-	adjustment, err := h.stockAdjustmentService.UpdateStockAdjustment(id, &req)
+	adjustment, err := h.stockAdjustmentService.UpdateStockAdjustment(c.Request.Context(), id, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Status:  "error",
@@ -191,7 +197,7 @@ func (h *StockAdjustmentHandler) DeleteStockAdjustment(c *gin.Context) {
 		return
 	}
 
-	err = h.stockAdjustmentService.DeleteStockAdjustment(id)
+	err = h.stockAdjustmentService.DeleteStockAdjustment(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Status:  "error",
@@ -219,17 +225,18 @@ func (h *StockAdjustmentHandler) ApproveStockAdjustment(c *gin.Context) {
 		return
 	}
 
-	var req inventoryModels.StockAdjustmentApprovalRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
+	// Get user ID from context
+	userID := middleware.GetCurrentUserID(c)
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, common.ErrorResponse{
 			Status:  "error",
-			Message: "Invalid request body",
-			Error:   err.Error(),
+			Message: "Unauthorized",
+			Error:   "Invalid authentication",
 		})
 		return
 	}
 
-	adjustment, err := h.stockAdjustmentService.ApproveStockAdjustment(id, &req)
+	adjustment, err := h.stockAdjustmentService.ApproveStockAdjustment(c.Request.Context(), id, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Status:  "error",
@@ -258,10 +265,6 @@ func (h *StockAdjustmentHandler) GetStockAdjustmentsByProduct(c *gin.Context) {
 		return
 	}
 
-	filter := inventoryModels.StockAdjustmentFilter{
-		ProductID: &productID,
-	}
-
 	// Parse pagination
 	page := 1
 	if pageStr := c.Query("page"); pageStr != "" {
@@ -277,7 +280,7 @@ func (h *StockAdjustmentHandler) GetStockAdjustmentsByProduct(c *gin.Context) {
 		}
 	}
 
-	adjustments, total, err := h.stockAdjustmentService.GetStockAdjustments(&filter, page, limit)
+	adjustments, total, err := h.stockAdjustmentService.GetAdjustmentsByProduct(c.Request.Context(), productID, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Status:  "error",

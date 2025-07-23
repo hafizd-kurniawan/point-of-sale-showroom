@@ -242,12 +242,21 @@ func (h *PurchaseOrderHandler) GetPurchaseOrders(c *gin.Context) {
 		return
 	}
 
+	totalPages := (total + params.Limit - 1) / params.Limit
+	hasMore := params.Page < totalPages
+
+	meta := common.PaginationMeta{
+		Page:       params.Page,
+		Limit:      params.Limit,
+		Total:      total,
+		TotalPages: totalPages,
+		HasMore:    hasMore,
+	}
+
 	response := common.NewPaginationResponse(
 		"Purchase orders retrieved successfully",
 		orders,
-		total,
-		params.Page,
-		params.Limit,
+		meta,
 	)
 
 	c.JSON(http.StatusOK, response)
@@ -285,12 +294,21 @@ func (h *PurchaseOrderHandler) SearchPurchaseOrders(c *gin.Context) {
 		return
 	}
 
+	totalPages := (total + limit - 1) / limit
+	hasMore := page < totalPages
+
+	meta := common.PaginationMeta{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+		HasMore:    hasMore,
+	}
+
 	response := common.NewPaginationResponse(
 		"Purchase order search completed successfully",
 		orders,
-		total,
-		page,
-		limit,
+		meta,
 	)
 
 	c.JSON(http.StatusOK, response)
@@ -488,12 +506,21 @@ func (h *PurchaseOrderHandler) GetPendingApproval(c *gin.Context) {
 		return
 	}
 
+	totalPages := (total + limit - 1) / limit
+	hasMore := page < totalPages
+
+	meta := common.PaginationMeta{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+		HasMore:    hasMore,
+	}
+
 	response := common.NewPaginationResponse(
 		"Pending approval purchase orders retrieved successfully",
 		orders,
-		total,
-		page,
-		limit,
+		meta,
 	)
 
 	c.JSON(http.StatusOK, response)

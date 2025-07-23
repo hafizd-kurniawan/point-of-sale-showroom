@@ -277,12 +277,21 @@ func (h *ProductHandler) GetProducts(c *gin.Context) {
 		return
 	}
 
+	totalPages := (total + params.Limit - 1) / params.Limit
+	hasMore := params.Page < totalPages
+
+	meta := common.PaginationMeta{
+		Page:       params.Page,
+		Limit:      params.Limit,
+		Total:      total,
+		TotalPages: totalPages,
+		HasMore:    hasMore,
+	}
+
 	response := common.NewPaginationResponse(
 		"Products retrieved successfully",
 		products,
-		total,
-		params.Page,
-		params.Limit,
+		meta,
 	)
 
 	c.JSON(http.StatusOK, response)
@@ -311,12 +320,21 @@ func (h *ProductHandler) GetLowStockProducts(c *gin.Context) {
 		return
 	}
 
+	totalPages := (total + limit - 1) / limit
+	hasMore := page < totalPages
+
+	meta := common.PaginationMeta{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+		HasMore:    hasMore,
+	}
+
 	response := common.NewPaginationResponse(
 		"Low stock products retrieved successfully",
 		products,
-		total,
-		page,
-		limit,
+		meta,
 	)
 
 	c.JSON(http.StatusOK, response)
@@ -354,12 +372,21 @@ func (h *ProductHandler) SearchProducts(c *gin.Context) {
 		return
 	}
 
+	totalPages := (total + limit - 1) / limit
+	hasMore := page < totalPages
+
+	meta := common.PaginationMeta{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+		HasMore:    hasMore,
+	}
+
 	response := common.NewPaginationResponse(
 		"Product search completed successfully",
 		products,
-		total,
-		page,
-		limit,
+		meta,
 	)
 
 	c.JSON(http.StatusOK, response)

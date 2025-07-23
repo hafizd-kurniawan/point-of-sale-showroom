@@ -17,6 +17,7 @@ import (
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/admin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/auth"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/inventory"
+	inventoryModels "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/inventory"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/implementations"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/interfaces"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/routes"
@@ -205,12 +206,13 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 	productCategoryService := masterService.NewProductCategoryService(productCategoryRepo)
 
 	// Initialize inventory services
-	productService := inventoryService.NewProductService(productRepo, productCategoryRepo, stockMovementRepo)
-	purchaseOrderService := inventoryService.NewPurchaseOrderService(purchaseOrderRepo, purchaseOrderDetailRepo, supplierRepo, productRepo)
-	goodsReceiptService := inventoryService.NewGoodsReceiptService(goodsReceiptRepo, goodsReceiptDetailRepo, purchaseOrderRepo, purchaseOrderDetailRepo, stockMovementRepo)
+	codeGenerator := inventoryModels.NewCodeGenerator()
+	productService := inventoryService.NewProductService(productRepo, stockMovementRepo)
+	purchaseOrderService := inventoryService.NewPurchaseOrderService(purchaseOrderRepo, productRepo, stockMovementRepo)
+	goodsReceiptService := inventoryService.NewGoodsReceiptService(goodsReceiptRepo, goodsReceiptDetailRepo, purchaseOrderRepo, purchaseOrderDetailRepo, stockMovementRepo, productRepo, codeGenerator)
 	stockMovementService := inventoryService.NewStockMovementService(stockMovementRepo, productRepo)
-	stockAdjustmentService := inventoryService.NewStockAdjustmentService(stockAdjustmentRepo, productRepo, stockMovementRepo, userRepo)
-	supplierPaymentService := inventoryService.NewSupplierPaymentService(supplierPaymentRepo, supplierRepo, purchaseOrderRepo)
+	stockAdjustmentService := inventoryService.NewStockAdjustmentService(stockAdjustmentRepo, stockMovementRepo, productRepo)
+	supplierPaymentService := inventoryService.NewSupplierPaymentService(supplierPaymentRepo, purchaseOrderRepo, codeGenerator)
 
 	// Initialize handlers
 	authHandler := auth.NewHandler(authService)

@@ -202,8 +202,7 @@ func (r *Router) SetupRoutes() *gin.Engine {
 			productGroup.GET("/:id", r.productHandler.GetProduct)
 			productGroup.PUT("/:id", r.productHandler.UpdateProduct)
 			productGroup.DELETE("/:id", r.productHandler.DeleteProduct)
-			productGroup.GET("/:id/stock", r.productHandler.GetProductStock)
-			productGroup.GET("/:id/movements", r.stockMovementHandler.GetMovementsByProduct)
+			productGroup.GET("/:id/movements", r.stockMovementHandler.GetProductStockHistory)
 			productGroup.GET("/:id/adjustments", r.stockAdjustmentHandler.GetStockAdjustmentsByProduct)
 		}
 
@@ -215,29 +214,27 @@ func (r *Router) SetupRoutes() *gin.Engine {
 			purchaseOrderGroup.GET("/:id", r.purchaseOrderHandler.GetPurchaseOrder)
 			purchaseOrderGroup.PUT("/:id", r.purchaseOrderHandler.UpdatePurchaseOrder)
 			purchaseOrderGroup.DELETE("/:id", r.purchaseOrderHandler.DeletePurchaseOrder)
-			purchaseOrderGroup.POST("/:id/send", r.purchaseOrderHandler.SendPurchaseOrder)
+			purchaseOrderGroup.POST("/:id/send", r.purchaseOrderHandler.SendToSupplier)
 			purchaseOrderGroup.POST("/:id/approve", r.purchaseOrderHandler.ApprovePurchaseOrder)
 			purchaseOrderGroup.POST("/:id/cancel", r.purchaseOrderHandler.CancelPurchaseOrder)
-			purchaseOrderGroup.GET("/:id/details", r.purchaseOrderHandler.GetPurchaseOrderDetails)
 		}
 
 		// Goods Receipt management
 		goodsReceiptGroup := inventoryGroup.Group("/goods-receipts")
 		{
 			goodsReceiptGroup.POST("", r.goodsReceiptHandler.CreateGoodsReceipt)
-			goodsReceiptGroup.GET("", r.goodsReceiptHandler.GetGoodsReceipts)
+			goodsReceiptGroup.GET("", r.goodsReceiptHandler.ListGoodsReceipts)
 			goodsReceiptGroup.GET("/:id", r.goodsReceiptHandler.GetGoodsReceipt)
 			goodsReceiptGroup.PUT("/:id", r.goodsReceiptHandler.UpdateGoodsReceipt)
 			goodsReceiptGroup.DELETE("/:id", r.goodsReceiptHandler.DeleteGoodsReceipt)
-			goodsReceiptGroup.GET("/:id/details", r.goodsReceiptHandler.GetGoodsReceiptDetails)
 		}
 
 		// Stock Movement management
 		stockMovementGroup := inventoryGroup.Group("/stock-movements")
 		{
-			stockMovementGroup.GET("", r.stockMovementHandler.GetStockMovements)
+			stockMovementGroup.GET("", r.stockMovementHandler.ListStockMovements)
 			stockMovementGroup.GET("/:id", r.stockMovementHandler.GetStockMovement)
-			stockMovementGroup.POST("/transfer", r.stockMovementHandler.CreateStockTransfer)
+			stockMovementGroup.POST("/adjustment", r.stockMovementHandler.CreateManualAdjustment)
 		}
 
 		// Stock Adjustment management
