@@ -16,11 +16,13 @@ import (
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/database"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/admin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/auth"
+	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/products"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/implementations"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/interfaces"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/routes"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services"
 	masterService "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/master"
+	productService "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services/products"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/utils"
 )
 
@@ -87,36 +89,57 @@ func main() {
 // Dependencies holds all application dependencies
 type Dependencies struct {
 	// Repositories
-	userRepo              interfaces.UserRepository
-	sessionRepo           interfaces.UserSessionRepository
-	customerRepo          interfaces.CustomerRepository
-	supplierRepo          interfaces.SupplierRepository
-	vehicleBrandRepo      interfaces.VehicleBrandRepository
-	vehicleCategoryRepo   interfaces.VehicleCategoryRepository
-	vehicleModelRepo      interfaces.VehicleModelRepository
-	productCategoryRepo   interfaces.ProductCategoryRepository
+	userRepo                    interfaces.UserRepository
+	sessionRepo                 interfaces.UserSessionRepository
+	customerRepo                interfaces.CustomerRepository
+	supplierRepo                interfaces.SupplierRepository
+	vehicleBrandRepo            interfaces.VehicleBrandRepository
+	vehicleCategoryRepo         interfaces.VehicleCategoryRepository
+	vehicleModelRepo            interfaces.VehicleModelRepository
+	productCategoryRepo         interfaces.ProductCategoryRepository
+	productRepo                 interfaces.ProductSparePartRepository
+	purchaseOrderRepo           interfaces.PurchaseOrderPartsRepository
+	purchaseOrderDetailRepo     interfaces.PurchaseOrderDetailRepository
+	goodsReceiptRepo            interfaces.GoodsReceiptRepository
+	goodsReceiptDetailRepo      interfaces.GoodsReceiptDetailRepository
+	stockMovementRepo           interfaces.StockMovementRepository
+	stockAdjustmentRepo         interfaces.StockAdjustmentRepository
+	supplierPaymentRepo         interfaces.SupplierPaymentRepository
 	
 	// Services
-	authService           *services.AuthService
-	userService           *services.UserService
-	customerService       *masterService.CustomerService
-	supplierService       *masterService.SupplierService
-	vehicleBrandService   *masterService.VehicleBrandService
-	vehicleCategoryService *masterService.VehicleCategoryService
-	vehicleModelService   *masterService.VehicleModelService
-	productCategoryService *masterService.ProductCategoryService
+	authService                 *services.AuthService
+	userService                 *services.UserService
+	customerService             *masterService.CustomerService
+	supplierService             *masterService.SupplierService
+	vehicleBrandService         *masterService.VehicleBrandService
+	vehicleCategoryService      *masterService.VehicleCategoryService
+	vehicleModelService         *masterService.VehicleModelService
+	productCategoryService      *masterService.ProductCategoryService
+	productService              *productService.ProductService
+	purchaseOrderService        *productService.PurchaseOrderService
+	stockService                *productService.StockService
+	goodsReceiptService         *productService.GoodsReceiptService
+	stockAdjustmentService      *productService.StockAdjustmentService
+	supplierPaymentService      *productService.SupplierPaymentService
 	
 	// Handlers
-	authHandler           *auth.Handler
-	adminHandler          *admin.Handler
-	customerHandler       *admin.CustomerHandler
-	supplierHandler       *admin.SupplierHandler
-	vehicleMasterHandler  *admin.VehicleMasterHandler
-	productCategoryHandler *admin.ProductCategoryHandler
+	authHandler                 *auth.Handler
+	adminHandler                *admin.Handler
+	customerHandler             *admin.CustomerHandler
+	supplierHandler             *admin.SupplierHandler
+	vehicleMasterHandler        *admin.VehicleMasterHandler
+	productCategoryHandler      *admin.ProductCategoryHandler
+	productHandler              *admin.ProductHandler
+	purchaseOrderHandler        *admin.PurchaseOrderHandler
+	purchaseOrderDetailHandler  *products.PurchaseOrderDetailHandler
+	goodsReceiptHandler         *products.GoodsReceiptHandler
+	stockMovementHandler        *products.StockMovementHandler
+	stockAdjustmentHandler      *products.StockAdjustmentHandler
+	supplierPaymentHandler      *products.SupplierPaymentHandler
 	
 	// Utils
-	jwtManager            *utils.JWTManager
-	router                *routes.Router
+	jwtManager                  *utils.JWTManager
+	router                      *routes.Router
 }
 
 // initializeDatabase sets up database connection and runs migrations
@@ -152,6 +175,16 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 	vehicleCategoryRepo := implementations.NewVehicleCategoryRepository(db)
 	vehicleModelRepo := implementations.NewVehicleModelRepository(db)
 	productCategoryRepo := implementations.NewProductCategoryRepository(db)
+	
+	// Initialize product repositories
+	productRepo := implementations.NewProductSparePartRepository(db)
+	purchaseOrderRepo := implementations.NewPurchaseOrderPartsRepository(db)
+	purchaseOrderDetailRepo := implementations.NewPurchaseOrderDetailRepository(db)
+	goodsReceiptRepo := implementations.NewGoodsReceiptRepository(db)
+	goodsReceiptDetailRepo := implementations.NewGoodsReceiptDetailRepository(db)
+	stockMovementRepo := implementations.NewStockMovementRepository(db)
+	stockAdjustmentRepo := implementations.NewStockAdjustmentRepository(db)
+	supplierPaymentRepo := implementations.NewSupplierPaymentRepository(db)
 
 	// Initialize JWT manager
 	jwtManager := utils.NewJWTManager(cfg.JWT.SecretKey, cfg.JWT.GetExpiration())
@@ -165,6 +198,37 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 	vehicleCategoryService := masterService.NewVehicleCategoryService(vehicleCategoryRepo)
 	vehicleModelService := masterService.NewVehicleModelService(vehicleModelRepo, vehicleBrandRepo, vehicleCategoryRepo)
 	productCategoryService := masterService.NewProductCategoryService(productCategoryRepo)
+	
+	// Initialize product services
+	productSvc := productService.NewProductService(productRepo, stockMovementRepo)
+	purchaseOrderService := productService.NewPurchaseOrderService(
+		purchaseOrderRepo,
+		purchaseOrderDetailRepo,
+		productRepo,
+		goodsReceiptRepo,
+		stockMovementRepo,
+	)
+	stockService := productService.NewStockService(
+		stockMovementRepo,
+		stockAdjustmentRepo,
+		productRepo,
+	)
+	goodsReceiptService := productService.NewGoodsReceiptService(
+		goodsReceiptRepo,
+		goodsReceiptDetailRepo,
+		purchaseOrderDetailRepo,
+		stockMovementRepo,
+		productRepo,
+	)
+	stockAdjustmentService := productService.NewStockAdjustmentService(
+		stockAdjustmentRepo,
+		stockMovementRepo,
+		productRepo,
+	)
+	supplierPaymentService := productService.NewSupplierPaymentService(
+		supplierPaymentRepo,
+		purchaseOrderRepo,
+	)
 
 	// Initialize handlers
 	authHandler := auth.NewHandler(authService)
@@ -173,6 +237,15 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 	supplierHandler := admin.NewSupplierHandler(supplierService)
 	vehicleMasterHandler := admin.NewVehicleMasterHandler(vehicleBrandService, vehicleCategoryService, vehicleModelService)
 	productCategoryHandler := admin.NewProductCategoryHandler(productCategoryService)
+	
+	// Initialize product handlers
+	productHandler := admin.NewProductHandler(productSvc)
+	purchaseOrderHandler := admin.NewPurchaseOrderHandler(purchaseOrderService)
+	purchaseOrderDetailHandler := products.NewPurchaseOrderDetailHandler(purchaseOrderDetailRepo)
+	goodsReceiptHandler := products.NewGoodsReceiptHandler(goodsReceiptService)
+	stockMovementHandler := products.NewStockMovementHandler(stockService)
+	stockAdjustmentHandler := products.NewStockAdjustmentHandler(stockAdjustmentService)
+	supplierPaymentHandler := products.NewSupplierPaymentHandler(supplierPaymentService)
 
 	// Initialize router
 	router := routes.NewRouter(
@@ -182,35 +255,63 @@ func initializeDependencies(cfg *config.Config) *Dependencies {
 		supplierHandler,
 		vehicleMasterHandler,
 		productCategoryHandler,
+		productHandler,
+		purchaseOrderHandler,
+		purchaseOrderDetailHandler,
+		goodsReceiptHandler,
+		stockMovementHandler,
+		stockAdjustmentHandler,
+		supplierPaymentHandler,
 		jwtManager,
 		sessionRepo,
 		cfg,
 	)
 
 	return &Dependencies{
-		userRepo:               userRepo,
-		sessionRepo:            sessionRepo,
-		customerRepo:           customerRepo,
-		supplierRepo:           supplierRepo,
-		vehicleBrandRepo:       vehicleBrandRepo,
-		vehicleCategoryRepo:    vehicleCategoryRepo,
-		vehicleModelRepo:       vehicleModelRepo,
-		productCategoryRepo:    productCategoryRepo,
-		authService:            authService,
-		userService:            userService,
-		customerService:        customerService,
-		supplierService:        supplierService,
-		vehicleBrandService:    vehicleBrandService,
-		vehicleCategoryService: vehicleCategoryService,
-		vehicleModelService:    vehicleModelService,
-		productCategoryService: productCategoryService,
-		authHandler:            authHandler,
-		adminHandler:           adminHandler,
-		customerHandler:        customerHandler,
-		supplierHandler:        supplierHandler,
-		vehicleMasterHandler:   vehicleMasterHandler,
-		productCategoryHandler: productCategoryHandler,
-		jwtManager:             jwtManager,
-		router:                 router,
+		userRepo:                   userRepo,
+		sessionRepo:                sessionRepo,
+		customerRepo:               customerRepo,
+		supplierRepo:               supplierRepo,
+		vehicleBrandRepo:           vehicleBrandRepo,
+		vehicleCategoryRepo:        vehicleCategoryRepo,
+		vehicleModelRepo:           vehicleModelRepo,
+		productCategoryRepo:        productCategoryRepo,
+		productRepo:                productRepo,
+		purchaseOrderRepo:          purchaseOrderRepo,
+		purchaseOrderDetailRepo:    purchaseOrderDetailRepo,
+		goodsReceiptRepo:           goodsReceiptRepo,
+		goodsReceiptDetailRepo:     goodsReceiptDetailRepo,
+		stockMovementRepo:          stockMovementRepo,
+		stockAdjustmentRepo:        stockAdjustmentRepo,
+		supplierPaymentRepo:        supplierPaymentRepo,
+		authService:                authService,
+		userService:                userService,
+		customerService:            customerService,
+		supplierService:            supplierService,
+		vehicleBrandService:        vehicleBrandService,
+		vehicleCategoryService:     vehicleCategoryService,
+		vehicleModelService:        vehicleModelService,
+		productCategoryService:     productCategoryService,
+		productService:             productSvc,
+		purchaseOrderService:       purchaseOrderService,
+		stockService:               stockService,
+		goodsReceiptService:        goodsReceiptService,
+		stockAdjustmentService:     stockAdjustmentService,
+		supplierPaymentService:     supplierPaymentService,
+		authHandler:                authHandler,
+		adminHandler:               adminHandler,
+		customerHandler:            customerHandler,
+		supplierHandler:            supplierHandler,
+		vehicleMasterHandler:       vehicleMasterHandler,
+		productCategoryHandler:     productCategoryHandler,
+		productHandler:             productHandler,
+		purchaseOrderHandler:       purchaseOrderHandler,
+		purchaseOrderDetailHandler: purchaseOrderDetailHandler,
+		goodsReceiptHandler:        goodsReceiptHandler,
+		stockMovementHandler:       stockMovementHandler,
+		stockAdjustmentHandler:     stockAdjustmentHandler,
+		supplierPaymentHandler:     supplierPaymentHandler,
+		jwtManager:                 jwtManager,
+		router:                     router,
 	}
 }

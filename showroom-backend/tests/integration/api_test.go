@@ -12,6 +12,7 @@ import (
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/admin"
 	authHandlers "github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/auth"
+	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/products"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/interfaces"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/routes"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/services"
@@ -78,9 +79,35 @@ func setupTestRouter() http.Handler {
 	supplierHandler := (*admin.SupplierHandler)(nil)
 	vehicleMasterHandler := (*admin.VehicleMasterHandler)(nil)
 	productCategoryHandler := (*admin.ProductCategoryHandler)(nil)
+	
+	// Initialize dummy product handlers for test
+	productHandler := (*admin.ProductHandler)(nil)
+	purchaseOrderHandler := (*admin.PurchaseOrderHandler)(nil)
+	purchaseOrderDetailHandler := (*products.PurchaseOrderDetailHandler)(nil)
+	goodsReceiptHandler := (*products.GoodsReceiptHandler)(nil)
+	stockMovementHandler := (*products.StockMovementHandler)(nil)
+	stockAdjustmentHandler := (*products.StockAdjustmentHandler)(nil)
+	supplierPaymentHandler := (*products.SupplierPaymentHandler)(nil)
 
 	// Initialize router
-	router := routes.NewRouter(authHandler, adminHandler, customerHandler, supplierHandler, vehicleMasterHandler, productCategoryHandler, jwtManager, sessionRepo, cfg)
+	router := routes.NewRouter(
+		authHandler, 
+		adminHandler, 
+		customerHandler, 
+		supplierHandler, 
+		vehicleMasterHandler, 
+		productCategoryHandler,
+		productHandler,
+		purchaseOrderHandler,
+		purchaseOrderDetailHandler,
+		goodsReceiptHandler,
+		stockMovementHandler,
+		stockAdjustmentHandler,
+		supplierPaymentHandler,
+		jwtManager, 
+		sessionRepo, 
+		cfg,
+	)
 
 	return router.SetupRoutes()
 }
