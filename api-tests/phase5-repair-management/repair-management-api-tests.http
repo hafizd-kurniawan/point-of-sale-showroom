@@ -1,0 +1,469 @@
+# Phase 5: Repair Management System - API Test Collection
+# Base URL: http://localhost:8080
+# Authentication: Bearer Token required for all endpoints
+
+### Variables
+@baseUrl = http://localhost:8080
+@token = your_jwt_token_here
+
+###############################################
+# VEHICLE DAMAGE MANAGEMENT
+###############################################
+
+### 1. CREATE DAMAGE RECORD
+POST {{baseUrl}}/api/v1/repairs/damages
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "transaction_id": 1,
+  "damage_category": "body",
+  "damage_severity": "medium",
+  "damage_description": "Scratches and dent on rear bumper from minor collision",
+  "damage_location": "rear_bumper",
+  "damage_cause": "parking_incident",
+  "estimated_cost": 1500000,
+  "assessment_notes": "Requires painting and minor body work",
+  "photos_json": {
+    "photos": [
+      "damage_photo_1.jpg",
+      "damage_photo_2.jpg"
+    ],
+    "assessment_date": "2024-01-15"
+  }
+}
+
+### 2. GET ALL DAMAGES
+GET {{baseUrl}}/api/v1/repairs/damages?page=1&limit=10&category=body&severity=medium
+Authorization: Bearer {{token}}
+
+### 3. GET DAMAGE BY ID
+GET {{baseUrl}}/api/v1/repairs/damages/1
+Authorization: Bearer {{token}}
+
+### 4. UPDATE DAMAGE
+PUT {{baseUrl}}/api/v1/repairs/damages/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "damage_category": "body",
+  "damage_severity": "medium",
+  "damage_description": "Scratches and dent on rear bumper - updated assessment",
+  "damage_location": "rear_bumper",
+  "damage_cause": "parking_incident",
+  "estimated_cost": 1200000,
+  "assessment_notes": "Cost reduced after detailed assessment",
+  "damage_status": "assessed"
+}
+
+### 5. ASSESS DAMAGE
+POST {{baseUrl}}/api/v1/repairs/damages/1/assess
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "damage_severity": "medium",
+  "estimated_cost": 1200000,
+  "assessment_notes": "Detailed assessment completed. Requires painting and minor bodywork."
+}
+
+### 6. GET HIGH PRIORITY DAMAGES
+GET {{baseUrl}}/api/v1/repairs/damages/high-priority?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 7. GET DAMAGE SUMMARY
+GET {{baseUrl}}/api/v1/repairs/transactions/1/damage-summary
+Authorization: Bearer {{token}}
+
+###############################################
+# WORK ORDER MANAGEMENT
+###############################################
+
+### 8. CREATE WORK ORDER
+POST {{baseUrl}}/api/v1/repairs/work-orders
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "transaction_id": 1,
+  "priority_level": "medium",
+  "estimated_cost": 1500000,
+  "estimated_duration_hours": 8,
+  "work_description": "Repair rear bumper damage - painting and bodywork",
+  "special_instructions": "Use original paint color code. Ensure proper color matching."
+}
+
+### 9. GET ALL WORK ORDERS
+GET {{baseUrl}}/api/v1/repairs/work-orders?page=1&limit=10&status=pending&priority=medium
+Authorization: Bearer {{token}}
+
+### 10. GET WORK ORDER BY ID
+GET {{baseUrl}}/api/v1/repairs/work-orders/1
+Authorization: Bearer {{token}}
+
+### 11. GET WORK ORDER BY NUMBER
+GET {{baseUrl}}/api/v1/repairs/work-orders/number/WO202401001
+Authorization: Bearer {{token}}
+
+### 12. UPDATE WORK ORDER
+PUT {{baseUrl}}/api/v1/repairs/work-orders/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "priority_level": "medium",
+  "estimated_cost": 1400000,
+  "actual_cost": 1350000,
+  "estimated_duration_hours": 8,
+  "actual_duration_hours": 7,
+  "work_description": "Repair rear bumper damage - completed",
+  "special_instructions": "Original paint color used",
+  "work_order_status": "completed",
+  "start_date": "2024-01-16T08:00:00Z",
+  "target_completion_date": "2024-01-16T16:00:00Z",
+  "actual_completion_date": "2024-01-16T15:00:00Z"
+}
+
+### 13. ASSIGN MECHANIC TO WORK ORDER
+POST {{baseUrl}}/api/v1/repairs/work-orders/1/assign
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "mechanic_id": 5,
+  "start_date": "2024-01-16T08:00:00Z",
+  "target_completion_date": "2024-01-16T16:00:00Z"
+}
+
+### 14. APPROVE WORK ORDER
+POST {{baseUrl}}/api/v1/repairs/work-orders/1/approve
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "approved",
+  "approval_notes": "Work order approved for execution"
+}
+
+### 15. GET PENDING WORK ORDER APPROVALS
+GET {{baseUrl}}/api/v1/repairs/work-orders/pending-approval?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 16. GET WORK ORDERS BY MECHANIC
+GET {{baseUrl}}/api/v1/repairs/work-orders/mechanic/5?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 17. GET WORK ORDER SUMMARY
+GET {{baseUrl}}/api/v1/repairs/transactions/1/work-order-summary
+Authorization: Bearer {{token}}
+
+###############################################
+# WORK DETAIL MANAGEMENT
+###############################################
+
+### 18. CREATE WORK DETAIL
+POST {{baseUrl}}/api/v1/repairs/work-details
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "work_order_id": 1,
+  "damage_id": 1,
+  "task_description": "Sand and prepare rear bumper surface",
+  "estimated_hours": 2,
+  "task_priority": "high",
+  "task_category": "bodywork",
+  "work_instructions": "Remove old paint, sand surface smooth, apply primer"
+}
+
+### 19. GET ALL WORK DETAILS
+GET {{baseUrl}}/api/v1/repairs/work-details?page=1&limit=10&work_order_id=1&status=pending
+Authorization: Bearer {{token}}
+
+### 20. GET WORK DETAIL BY ID
+GET {{baseUrl}}/api/v1/repairs/work-details/1
+Authorization: Bearer {{token}}
+
+### 21. UPDATE WORK DETAIL
+PUT {{baseUrl}}/api/v1/repairs/work-details/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "task_description": "Sand and prepare rear bumper surface - completed",
+  "estimated_hours": 2,
+  "actual_hours": 1.5,
+  "task_priority": "high",
+  "task_category": "bodywork",
+  "work_instructions": "Surface preparation completed",
+  "task_status": "completed",
+  "progress_percentage": 100,
+  "quality_check_status": "passed",
+  "completion_notes": "Surface properly prepared for painting",
+  "start_time": "2024-01-16T08:00:00Z",
+  "end_time": "2024-01-16T09:30:00Z"
+}
+
+### 22. UPDATE PROGRESS
+POST {{baseUrl}}/api/v1/repairs/work-details/1/progress
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "progress_percentage": 75,
+  "task_status": "in_progress",
+  "completion_notes": "Surface sanding 75% complete"
+}
+
+### 23. ASSIGN MECHANIC TO WORK DETAIL
+POST {{baseUrl}}/api/v1/repairs/work-details/1/assign
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "mechanic_id": 5,
+  "start_time": "2024-01-16T08:00:00Z"
+}
+
+### 24. PERFORM QUALITY CHECK
+POST {{baseUrl}}/api/v1/repairs/work-details/1/quality-check
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "quality_check_status": "passed"
+}
+
+### 25. GET WORK DETAILS BY WORK ORDER
+GET {{baseUrl}}/api/v1/repairs/work-orders/1/details?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 26. GET WORK DETAIL SUMMARY
+GET {{baseUrl}}/api/v1/repairs/work-orders/1/detail-summary
+Authorization: Bearer {{token}}
+
+###############################################
+# PARTS USAGE MANAGEMENT
+###############################################
+
+### 27. CREATE PARTS USAGE
+POST {{baseUrl}}/api/v1/repairs/parts-usage
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "work_detail_id": 1,
+  "product_id": 201,
+  "quantity_used": 2,
+  "unit_cost": 150000,
+  "total_cost": 300000,
+  "usage_type": "replacement",
+  "usage_notes": "Paint and primer for rear bumper repair"
+}
+
+### 28. GET ALL PARTS USAGE
+GET {{baseUrl}}/api/v1/repairs/parts-usage?page=1&limit=10&work_detail_id=1&status=pending
+Authorization: Bearer {{token}}
+
+### 29. GET PARTS USAGE BY ID
+GET {{baseUrl}}/api/v1/repairs/parts-usage/1
+Authorization: Bearer {{token}}
+
+### 30. APPROVE PARTS USAGE
+POST {{baseUrl}}/api/v1/repairs/parts-usage/1/approve
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "approved",
+  "approval_notes": "Parts usage approved"
+}
+
+### 31. ISSUE PARTS FOR REPAIR
+POST {{baseUrl}}/api/v1/repairs/work-details/1/issue-parts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "product_id": 201,
+  "quantity_used": 1,
+  "unit_cost": 150000,
+  "total_cost": 150000,
+  "usage_type": "replacement",
+  "usage_notes": "Additional paint required"
+}
+
+### 32. GET PARTS USAGE BY WORK DETAIL
+GET {{baseUrl}}/api/v1/repairs/work-details/1/parts-usage?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 33. GET PARTS USAGE SUMMARY
+GET {{baseUrl}}/api/v1/repairs/work-orders/1/parts-summary
+Authorization: Bearer {{token}}
+
+### 34. GET INVENTORY IMPACT
+GET {{baseUrl}}/api/v1/repairs/work-orders/1/inventory-impact
+Authorization: Bearer {{token}}
+
+###############################################
+# QUALITY INSPECTION MANAGEMENT
+###############################################
+
+### 35. CREATE INSPECTION
+POST {{baseUrl}}/api/v1/repairs/inspections
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "work_order_id": 1,
+  "inspection_type": "final_inspection",
+  "inspection_checklist_json": {
+    "paint_quality": "pending",
+    "surface_finish": "pending",
+    "color_match": "pending"
+  },
+  "quality_standards_json": {
+    "paint_thickness": "120-150 microns",
+    "color_tolerance": "DE < 1.0",
+    "surface_roughness": "Ra < 0.1"
+  },
+  "scheduled_date": "2024-01-16T16:00:00Z",
+  "inspector_id": 7
+}
+
+### 36. GET ALL INSPECTIONS
+GET {{baseUrl}}/api/v1/repairs/inspections?page=1&limit=10&work_order_id=1&status=scheduled
+Authorization: Bearer {{token}}
+
+### 37. GET INSPECTION BY ID
+GET {{baseUrl}}/api/v1/repairs/inspections/1
+Authorization: Bearer {{token}}
+
+### 38. SIGN OFF INSPECTION
+POST {{baseUrl}}/api/v1/repairs/inspections/1/sign-off
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "inspection_status": "completed",
+  "pass_fail_status": "pass",
+  "quality_score": 95,
+  "inspection_notes": "All quality standards met. Excellent finish quality."
+}
+
+### 39. SCHEDULE REWORK
+POST {{baseUrl}}/api/v1/repairs/inspections/1/schedule-rework
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "rework_instructions": "Paint color slightly off. Needs color correction and reapplication."
+}
+
+### 40. SCHEDULE NEW INSPECTION
+POST {{baseUrl}}/api/v1/repairs/inspections/schedule
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "work_order_id": 1,
+  "inspection_type": "progress_inspection",
+  "inspection_checklist_json": {
+    "work_progress": "pending",
+    "quality_check": "pending"
+  },
+  "quality_standards_json": {
+    "adherence_to_specs": "100%"
+  },
+  "scheduled_date": "2024-01-16T14:00:00Z",
+  "inspector_id": 7
+}
+
+### 41. GET INSPECTIONS BY WORK ORDER
+GET {{baseUrl}}/api/v1/repairs/work-orders/1/inspections?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 42. GET FAILED INSPECTIONS
+GET {{baseUrl}}/api/v1/repairs/inspections/failed?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 43. GET REWORK REQUIRED
+GET {{baseUrl}}/api/v1/repairs/inspections/rework-required?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 44. GET QUALITY METRICS
+GET {{baseUrl}}/api/v1/repairs/work-orders/1/quality-metrics
+Authorization: Bearer {{token}}
+
+### 45. GET INSPECTION DASHBOARD
+GET {{baseUrl}}/api/v1/repairs/inspections/dashboard
+Authorization: Bearer {{token}}
+
+###############################################
+# EXPECTED RESPONSES
+###############################################
+
+### Response for CREATE DAMAGE (201 Created)
+# {
+#   "success": true,
+#   "message": "Damage created successfully",
+#   "data": {
+#     "damage_id": 1,
+#     "transaction_id": 1,
+#     "damage_category": "body",
+#     "damage_severity": "medium",
+#     "damage_description": "Scratches and dent on rear bumper",
+#     "estimated_cost": 1500000,
+#     "damage_status": "reported",
+#     "created_at": "2024-01-15T10:00:00Z"
+#   }
+# }
+
+### Response for CREATE WORK ORDER (201 Created)
+# {
+#   "success": true,
+#   "message": "Work order created successfully",
+#   "data": {
+#     "work_order_id": 1,
+#     "work_order_number": "WO202401001",
+#     "transaction_id": 1,
+#     "priority_level": "medium",
+#     "estimated_cost": 1500000,
+#     "estimated_duration_hours": 8,
+#     "work_order_status": "pending",
+#     "created_at": "2024-01-15T11:00:00Z"
+#   }
+# }
+
+### Response for DAMAGE SUMMARY (200 OK)
+# {
+#   "success": true,
+#   "message": "Damage summary retrieved successfully",
+#   "data": {
+#     "transaction_id": 1,
+#     "total_damages": 3,
+#     "total_estimated_cost": 2500000,
+#     "critical_damages": 0,
+#     "high_damages": 1,
+#     "medium_damages": 2,
+#     "low_damages": 0
+#   }
+# }
+
+### Response for INSPECTION DASHBOARD (200 OK)
+# {
+#   "success": true,
+#   "message": "Inspection dashboard retrieved successfully",
+#   "data": {
+#     "total_inspections": 25,
+#     "scheduled_inspections": 5,
+#     "in_progress_inspections": 3,
+#     "completed_inspections": 17,
+#     "passed_inspections": 15,
+#     "failed_inspections": 2,
+#     "rework_required_count": 2,
+#     "overall_quality_score": 92.5,
+#     "pass_rate": 88.2
+#   }
+# }

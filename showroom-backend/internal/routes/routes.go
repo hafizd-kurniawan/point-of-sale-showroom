@@ -10,6 +10,8 @@ import (
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/admin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/auth"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/products"
+	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/repair"
+	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/vehicle_purchase"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/middleware"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/interfaces"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/utils"
@@ -30,6 +32,16 @@ type Router struct {
 	stockMovementHandler      *products.StockMovementHandler
 	stockAdjustmentHandler    *products.StockAdjustmentHandler
 	supplierPaymentHandler    *products.SupplierPaymentHandler
+	
+	// Phase 4 & 5 handlers
+	vehiclePurchaseTransactionHandler *vehicle_purchase.TransactionHandler
+	vehiclePurchasePaymentHandler     *vehicle_purchase.PaymentHandler
+	repairDamageHandler               *repair.DamageHandler
+	repairWorkOrderHandler            *repair.WorkOrderHandler
+	repairWorkDetailHandler           *repair.WorkDetailHandler
+	repairPartsUsageHandler           *repair.PartsUsageHandler
+	qualityInspectionHandler          *repair.QualityInspectionHandler
+	
 	jwtManager                *utils.JWTManager
 	sessionRepo               interfaces.UserSessionRepository
 	config                    *config.Config
@@ -50,6 +62,16 @@ func NewRouter(
 	stockMovementHandler *products.StockMovementHandler,
 	stockAdjustmentHandler *products.StockAdjustmentHandler,
 	supplierPaymentHandler *products.SupplierPaymentHandler,
+	
+	// Phase 4 & 5 handlers
+	vehiclePurchaseTransactionHandler *vehicle_purchase.TransactionHandler,
+	vehiclePurchasePaymentHandler *vehicle_purchase.PaymentHandler,
+	repairDamageHandler *repair.DamageHandler,
+	repairWorkOrderHandler *repair.WorkOrderHandler,
+	repairWorkDetailHandler *repair.WorkDetailHandler,
+	repairPartsUsageHandler *repair.PartsUsageHandler,
+	qualityInspectionHandler *repair.QualityInspectionHandler,
+	
 	jwtManager *utils.JWTManager,
 	sessionRepo interfaces.UserSessionRepository,
 	config *config.Config,
@@ -68,6 +90,16 @@ func NewRouter(
 		stockMovementHandler:      stockMovementHandler,
 		stockAdjustmentHandler:    stockAdjustmentHandler,
 		supplierPaymentHandler:    supplierPaymentHandler,
+		
+		// Phase 4 & 5 handlers
+		vehiclePurchaseTransactionHandler: vehiclePurchaseTransactionHandler,
+		vehiclePurchasePaymentHandler:     vehiclePurchasePaymentHandler,
+		repairDamageHandler:               repairDamageHandler,
+		repairWorkOrderHandler:            repairWorkOrderHandler,
+		repairWorkDetailHandler:           repairWorkDetailHandler,
+		repairPartsUsageHandler:           repairPartsUsageHandler,
+		qualityInspectionHandler:          qualityInspectionHandler,
+		
 		jwtManager:                jwtManager,
 		sessionRepo:               sessionRepo,
 		config:                    config,
@@ -284,6 +316,130 @@ func (r *Router) SetupRoutes() *gin.Engine {
 			supplierPaymentGroup.GET("/summary", r.supplierPaymentHandler.GetPaymentSummary)
 			supplierPaymentGroup.POST("/update-overdue", r.supplierPaymentHandler.UpdateOverduePayments)
 			supplierPaymentGroup.POST("/calculate-terms", r.supplierPaymentHandler.CalculatePaymentTerms)
+		}
+	}
+
+	// Phase 4: Vehicle Purchase routes (admin and sales role required)
+	vehiclePurchaseGroup := v1.Group("/vehicle-purchases")
+	vehiclePurchaseGroup.Use(middleware.AuthMiddleware(r.jwtManager, r.sessionRepo))
+	vehiclePurchaseGroup.Use(middleware.RequireRole("admin", "sales"))
+	{
+		// Vehicle Purchase Transactions
+		transactionGroup := vehiclePurchaseGroup.Group("/transactions")
+		{
+			transactionGroup.POST("", r.vehiclePurchaseTransactionHandler.CreateTransaction)
+			transactionGroup.GET("", r.vehiclePurchaseTransactionHandler.GetTransactions)
+			transactionGroup.GET("/:id", r.vehiclePurchaseTransactionHandler.GetTransaction)
+			transactionGroup.GET("/number/:number", r.vehiclePurchaseTransactionHandler.GetTransactionByNumber)
+			transactionGroup.GET("/vin/:vin", r.vehiclePurchaseTransactionHandler.GetTransactionByVIN)
+			transactionGroup.PUT("/:id", r.vehiclePurchaseTransactionHandler.UpdateTransaction)
+			transactionGroup.POST("/:id/inspect", r.vehiclePurchaseTransactionHandler.CompleteInspection)
+			transactionGroup.POST("/:id/approve", r.vehiclePurchaseTransactionHandler.ProcessApproval)
+			transactionGroup.GET("/pending-inspection", r.vehiclePurchaseTransactionHandler.GetPendingInspections)
+			transactionGroup.GET("/pending-approval", r.vehiclePurchaseTransactionHandler.GetPendingApprovals)
+			transactionGroup.GET("/:transaction_id/payments", r.vehiclePurchasePaymentHandler.GetPaymentsByTransaction)
+			transactionGroup.GET("/:transaction_id/payment-summary", r.vehiclePurchasePaymentHandler.GetPaymentSummary)
+		}
+
+		// Vehicle Purchase Payments
+		paymentGroup := vehiclePurchaseGroup.Group("/payments")
+		{
+			paymentGroup.POST("", r.vehiclePurchasePaymentHandler.CreatePayment)
+			paymentGroup.GET("", r.vehiclePurchasePaymentHandler.GetPayments)
+			paymentGroup.GET("/:id", r.vehiclePurchasePaymentHandler.GetPayment)
+			paymentGroup.GET("/number/:number", r.vehiclePurchasePaymentHandler.GetPaymentByNumber)
+			paymentGroup.POST("/:id/process", r.vehiclePurchasePaymentHandler.ProcessPayment)
+			paymentGroup.POST("/:id/approve", r.vehiclePurchasePaymentHandler.ProcessPaymentApproval)
+			paymentGroup.GET("/pending-approval", r.vehiclePurchasePaymentHandler.GetPendingApprovals)
+			paymentGroup.GET("/overdue", r.vehiclePurchasePaymentHandler.GetOverduePayments)
+		}
+
+		// Dashboard
+		vehiclePurchaseGroup.GET("/dashboard", r.vehiclePurchaseTransactionHandler.GetDashboardStats)
+	}
+
+	// Phase 5: Repair Management routes (admin, mechanic, and inspector roles)
+	repairGroup := v1.Group("/repairs")
+	repairGroup.Use(middleware.AuthMiddleware(r.jwtManager, r.sessionRepo))
+	repairGroup.Use(middleware.RequireRole("admin", "mechanic", "inspector"))
+	{
+		// Vehicle Damages
+		damageGroup := repairGroup.Group("/damages")
+		{
+			damageGroup.POST("", r.repairDamageHandler.CreateDamage)
+			damageGroup.GET("", r.repairDamageHandler.GetDamages)
+			damageGroup.GET("/:id", r.repairDamageHandler.GetDamage)
+			damageGroup.PUT("/:id", r.repairDamageHandler.UpdateDamage)
+			damageGroup.POST("/:id/assess", r.repairDamageHandler.AssessDamage)
+			damageGroup.GET("/high-priority", r.repairDamageHandler.GetHighPriorityDamages)
+		}
+
+		// Work Orders
+		workOrderGroup := repairGroup.Group("/work-orders")
+		{
+			workOrderGroup.POST("", r.repairWorkOrderHandler.CreateWorkOrder)
+			workOrderGroup.GET("", r.repairWorkOrderHandler.GetWorkOrders)
+			workOrderGroup.GET("/:id", r.repairWorkOrderHandler.GetWorkOrder)
+			workOrderGroup.GET("/number/:number", r.repairWorkOrderHandler.GetWorkOrderByNumber)
+			workOrderGroup.PUT("/:id", r.repairWorkOrderHandler.UpdateWorkOrder)
+			workOrderGroup.POST("/:id/assign", r.repairWorkOrderHandler.AssignMechanic)
+			workOrderGroup.POST("/:id/approve", r.repairWorkOrderHandler.ProcessApproval)
+			workOrderGroup.GET("/pending-approval", r.repairWorkOrderHandler.GetPendingApprovals)
+			workOrderGroup.GET("/mechanic/:mechanic_id", r.repairWorkOrderHandler.GetWorkOrdersByMechanic)
+			
+			// Work Order related endpoints
+			workOrderGroup.GET("/:work_order_id/details", r.repairWorkDetailHandler.GetWorkDetailsByWorkOrder)
+			workOrderGroup.GET("/:work_order_id/detail-summary", r.repairWorkDetailHandler.GetWorkDetailSummary)
+			workOrderGroup.GET("/:work_order_id/parts-summary", r.repairPartsUsageHandler.GetPartsUsageSummary)
+			workOrderGroup.GET("/:work_order_id/inventory-impact", r.repairPartsUsageHandler.GetInventoryImpact)
+			workOrderGroup.GET("/:work_order_id/inspections", r.qualityInspectionHandler.GetInspectionsByWorkOrder)
+			workOrderGroup.GET("/:work_order_id/quality-metrics", r.qualityInspectionHandler.GetQualityMetrics)
+		}
+
+		// Work Details
+		workDetailGroup := repairGroup.Group("/work-details")
+		{
+			workDetailGroup.POST("", r.repairWorkDetailHandler.CreateWorkDetail)
+			workDetailGroup.GET("", r.repairWorkDetailHandler.GetWorkDetails)
+			workDetailGroup.GET("/:id", r.repairWorkDetailHandler.GetWorkDetail)
+			workDetailGroup.PUT("/:id", r.repairWorkDetailHandler.UpdateWorkDetail)
+			workDetailGroup.POST("/:id/progress", r.repairWorkDetailHandler.UpdateProgress)
+			workDetailGroup.POST("/:id/assign", r.repairWorkDetailHandler.AssignMechanic)
+			workDetailGroup.POST("/:id/quality-check", r.repairWorkDetailHandler.PerformQualityCheck)
+			
+			// Work Detail related endpoints
+			workDetailGroup.GET("/:work_detail_id/parts-usage", r.repairPartsUsageHandler.GetPartsUsageByWorkDetail)
+			workDetailGroup.POST("/:work_detail_id/issue-parts", r.repairPartsUsageHandler.IssuePartsForRepair)
+		}
+
+		// Parts Usage
+		partsUsageGroup := repairGroup.Group("/parts-usage")
+		{
+			partsUsageGroup.POST("", r.repairPartsUsageHandler.CreatePartsUsage)
+			partsUsageGroup.GET("", r.repairPartsUsageHandler.GetPartsUsages)
+			partsUsageGroup.GET("/:id", r.repairPartsUsageHandler.GetPartsUsage)
+			partsUsageGroup.POST("/:id/approve", r.repairPartsUsageHandler.ProcessApproval)
+		}
+
+		// Quality Inspections
+		inspectionGroup := repairGroup.Group("/inspections")
+		{
+			inspectionGroup.POST("", r.qualityInspectionHandler.CreateInspection)
+			inspectionGroup.GET("", r.qualityInspectionHandler.GetInspections)
+			inspectionGroup.GET("/:id", r.qualityInspectionHandler.GetInspection)
+			inspectionGroup.POST("/:id/sign-off", r.qualityInspectionHandler.SignOffInspection)
+			inspectionGroup.POST("/:id/schedule-rework", r.qualityInspectionHandler.ScheduleRework)
+			inspectionGroup.POST("/schedule", r.qualityInspectionHandler.ScheduleInspection)
+			inspectionGroup.GET("/failed", r.qualityInspectionHandler.GetFailedInspections)
+			inspectionGroup.GET("/rework-required", r.qualityInspectionHandler.GetReworkRequired)
+			inspectionGroup.GET("/dashboard", r.qualityInspectionHandler.GetInspectionDashboard)
+		}
+
+		// Transaction related repair endpoints
+		transactionRepairGroup := repairGroup.Group("/transactions")
+		{
+			transactionRepairGroup.GET("/:transaction_id/damage-summary", r.repairDamageHandler.GetDamageSummary)
+			transactionRepairGroup.GET("/:transaction_id/work-order-summary", r.repairWorkOrderHandler.GetWorkOrderSummary)
 		}
 	}
 
