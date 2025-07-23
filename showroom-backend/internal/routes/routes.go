@@ -9,6 +9,7 @@ import (
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/admin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/auth"
+	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/handlers/products"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/middleware"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/interfaces"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/utils"
@@ -16,15 +17,22 @@ import (
 
 // Router handles all HTTP routes
 type Router struct {
-	authHandler            *auth.Handler
-	adminHandler           *admin.Handler
-	customerHandler        *admin.CustomerHandler
-	supplierHandler        *admin.SupplierHandler
-	vehicleMasterHandler   *admin.VehicleMasterHandler
-	productCategoryHandler *admin.ProductCategoryHandler
-	jwtManager             *utils.JWTManager
-	sessionRepo            interfaces.UserSessionRepository
-	config                 *config.Config
+	authHandler               *auth.Handler
+	adminHandler              *admin.Handler
+	customerHandler           *admin.CustomerHandler
+	supplierHandler           *admin.SupplierHandler
+	vehicleMasterHandler      *admin.VehicleMasterHandler
+	productCategoryHandler    *admin.ProductCategoryHandler
+	productHandler            *admin.ProductHandler
+	purchaseOrderHandler      *admin.PurchaseOrderHandler
+	poDetailHandler           *products.PurchaseOrderDetailHandler
+	goodsReceiptHandler       *products.GoodsReceiptHandler
+	stockMovementHandler      *products.StockMovementHandler
+	stockAdjustmentHandler    *products.StockAdjustmentHandler
+	supplierPaymentHandler    *products.SupplierPaymentHandler
+	jwtManager                *utils.JWTManager
+	sessionRepo               interfaces.UserSessionRepository
+	config                    *config.Config
 }
 
 // NewRouter creates a new router
@@ -35,20 +43,34 @@ func NewRouter(
 	supplierHandler *admin.SupplierHandler,
 	vehicleMasterHandler *admin.VehicleMasterHandler,
 	productCategoryHandler *admin.ProductCategoryHandler,
+	productHandler *admin.ProductHandler,
+	purchaseOrderHandler *admin.PurchaseOrderHandler,
+	poDetailHandler *products.PurchaseOrderDetailHandler,
+	goodsReceiptHandler *products.GoodsReceiptHandler,
+	stockMovementHandler *products.StockMovementHandler,
+	stockAdjustmentHandler *products.StockAdjustmentHandler,
+	supplierPaymentHandler *products.SupplierPaymentHandler,
 	jwtManager *utils.JWTManager,
 	sessionRepo interfaces.UserSessionRepository,
 	config *config.Config,
 ) *Router {
 	return &Router{
-		authHandler:            authHandler,
-		adminHandler:           adminHandler,
-		customerHandler:        customerHandler,
-		supplierHandler:        supplierHandler,
-		vehicleMasterHandler:   vehicleMasterHandler,
-		productCategoryHandler: productCategoryHandler,
-		jwtManager:             jwtManager,
-		sessionRepo:            sessionRepo,
-		config:                 config,
+		authHandler:               authHandler,
+		adminHandler:              adminHandler,
+		customerHandler:           customerHandler,
+		supplierHandler:           supplierHandler,
+		vehicleMasterHandler:      vehicleMasterHandler,
+		productCategoryHandler:    productCategoryHandler,
+		productHandler:            productHandler,
+		purchaseOrderHandler:      purchaseOrderHandler,
+		poDetailHandler:           poDetailHandler,
+		goodsReceiptHandler:       goodsReceiptHandler,
+		stockMovementHandler:      stockMovementHandler,
+		stockAdjustmentHandler:    stockAdjustmentHandler,
+		supplierPaymentHandler:    supplierPaymentHandler,
+		jwtManager:                jwtManager,
+		sessionRepo:               sessionRepo,
+		config:                    config,
 	}
 }
 
@@ -167,6 +189,101 @@ func (r *Router) SetupRoutes() *gin.Engine {
 			productCategoryGroup.DELETE("/:id", r.productCategoryHandler.DeleteProductCategory)
 			productCategoryGroup.GET("/tree", r.productCategoryHandler.GetProductCategoryTree)
 			productCategoryGroup.GET("/:id/children", r.productCategoryHandler.GetProductCategoryChildren)
+		}
+
+		// Product management
+		productGroup := adminGroup.Group("/products")
+		{
+			productGroup.POST("", r.productHandler.CreateProduct)
+			productGroup.GET("", r.productHandler.GetProducts)
+			productGroup.GET("/:id", r.productHandler.GetProduct)
+			productGroup.PUT("/:id", r.productHandler.UpdateProduct)
+			productGroup.DELETE("/:id", r.productHandler.DeleteProduct)
+			productGroup.GET("/low-stock", r.productHandler.GetLowStockProducts)
+			productGroup.GET("/:id/stock-movements", r.stockMovementHandler.GetProductStockMovements)
+			productGroup.GET("/:id/stock-history", r.stockMovementHandler.GetProductStockHistory)
+			productGroup.GET("/:id/current-stock", r.stockMovementHandler.GetCurrentStock)
+			productGroup.GET("/:id/adjustments", r.stockAdjustmentHandler.GetProductStockAdjustments)
+		}
+
+		// Purchase Order management
+		purchaseOrderGroup := adminGroup.Group("/purchase-orders")
+		{
+			purchaseOrderGroup.POST("", r.purchaseOrderHandler.CreatePurchaseOrder)
+			purchaseOrderGroup.GET("", r.purchaseOrderHandler.GetPurchaseOrders)
+			purchaseOrderGroup.GET("/:id", r.purchaseOrderHandler.GetPurchaseOrder)
+			purchaseOrderGroup.PUT("/:id", r.purchaseOrderHandler.UpdatePurchaseOrder)
+			purchaseOrderGroup.POST("/:id/approve", r.purchaseOrderHandler.ApprovePurchaseOrder)
+			purchaseOrderGroup.POST("/:id/cancel", r.purchaseOrderHandler.CancelPurchaseOrder)
+			purchaseOrderGroup.GET("/pending-approval", r.purchaseOrderHandler.GetPendingApproval)
+			
+			// Purchase Order Details
+			purchaseOrderGroup.POST("/:id/details", r.poDetailHandler.CreatePODetail)
+			purchaseOrderGroup.GET("/:id/details", r.poDetailHandler.GetPODetails)
+			purchaseOrderGroup.GET("/:id/pending-receipt-items", r.poDetailHandler.GetPendingReceiptItems)
+			purchaseOrderGroup.POST("/:id/bulk-details", r.poDetailHandler.BulkCreatePODetails)
+		}
+
+		// Purchase Order Details management
+		poDetailGroup := adminGroup.Group("/purchase-order-details")
+		{
+			poDetailGroup.GET("/:id", r.poDetailHandler.GetPODetail)
+			poDetailGroup.PUT("/:id", r.poDetailHandler.UpdatePODetail)
+			poDetailGroup.DELETE("/:id", r.poDetailHandler.DeletePODetail)
+		}
+
+		// Goods Receipt management
+		goodsReceiptGroup := adminGroup.Group("/goods-receipts")
+		{
+			goodsReceiptGroup.POST("", r.goodsReceiptHandler.CreateGoodsReceipt)
+			goodsReceiptGroup.GET("", r.goodsReceiptHandler.ListGoodsReceipts)
+			goodsReceiptGroup.GET("/:id", r.goodsReceiptHandler.GetGoodsReceipt)
+			goodsReceiptGroup.PUT("/:id", r.goodsReceiptHandler.UpdateGoodsReceipt)
+			goodsReceiptGroup.DELETE("/:id", r.goodsReceiptHandler.DeleteGoodsReceipt)
+			goodsReceiptGroup.POST("/:id/process", r.goodsReceiptHandler.ProcessGoodsReceipt)
+			goodsReceiptGroup.POST("/:id/details", r.goodsReceiptHandler.AddReceiptDetail)
+			goodsReceiptGroup.GET("/:id/details", r.goodsReceiptHandler.GetReceiptDetails)
+			goodsReceiptGroup.POST("/:id/bulk-receive", r.goodsReceiptHandler.BulkReceiveItems)
+		}
+
+		// Stock Movement management
+		stockMovementGroup := adminGroup.Group("/stock-movements")
+		{
+			stockMovementGroup.POST("", r.stockMovementHandler.CreateStockMovement)
+			stockMovementGroup.GET("", r.stockMovementHandler.ListStockMovements)
+			stockMovementGroup.GET("/:id", r.stockMovementHandler.GetStockMovement)
+			stockMovementGroup.POST("/transfer", r.stockMovementHandler.TransferStock)
+		}
+
+		// Stock Adjustment management
+		stockAdjustmentGroup := adminGroup.Group("/stock-adjustments")
+		{
+			stockAdjustmentGroup.POST("", r.stockAdjustmentHandler.CreateStockAdjustment)
+			stockAdjustmentGroup.GET("", r.stockAdjustmentHandler.ListStockAdjustments)
+			stockAdjustmentGroup.GET("/:id", r.stockAdjustmentHandler.GetStockAdjustment)
+			stockAdjustmentGroup.PUT("/:id", r.stockAdjustmentHandler.UpdateStockAdjustment)
+			stockAdjustmentGroup.DELETE("/:id", r.stockAdjustmentHandler.DeleteStockAdjustment)
+			stockAdjustmentGroup.GET("/pending", r.stockAdjustmentHandler.GetPendingAdjustments)
+			stockAdjustmentGroup.POST("/:id/approve", r.stockAdjustmentHandler.ApproveStockAdjustment)
+			stockAdjustmentGroup.GET("/variance-report", r.stockAdjustmentHandler.GetVarianceReport)
+			stockAdjustmentGroup.POST("/physical-count", r.stockAdjustmentHandler.CreatePhysicalCountAdjustments)
+			stockAdjustmentGroup.POST("/bulk-approve", r.stockAdjustmentHandler.BulkApproveAdjustments)
+		}
+
+		// Supplier Payment management
+		supplierPaymentGroup := adminGroup.Group("/supplier-payments")
+		{
+			supplierPaymentGroup.POST("", r.supplierPaymentHandler.CreateSupplierPayment)
+			supplierPaymentGroup.GET("", r.supplierPaymentHandler.ListSupplierPayments)
+			supplierPaymentGroup.GET("/:id", r.supplierPaymentHandler.GetSupplierPayment)
+			supplierPaymentGroup.PUT("/:id", r.supplierPaymentHandler.UpdateSupplierPayment)
+			supplierPaymentGroup.DELETE("/:id", r.supplierPaymentHandler.DeleteSupplierPayment)
+			supplierPaymentGroup.POST("/:id/process", r.supplierPaymentHandler.ProcessPayment)
+			supplierPaymentGroup.PUT("/:id/status", r.supplierPaymentHandler.UpdatePaymentStatus)
+			supplierPaymentGroup.GET("/overdue", r.supplierPaymentHandler.GetOverduePayments)
+			supplierPaymentGroup.GET("/summary", r.supplierPaymentHandler.GetPaymentSummary)
+			supplierPaymentGroup.POST("/update-overdue", r.supplierPaymentHandler.UpdateOverduePayments)
+			supplierPaymentGroup.POST("/calculate-terms", r.supplierPaymentHandler.CalculatePaymentTerms)
 		}
 	}
 

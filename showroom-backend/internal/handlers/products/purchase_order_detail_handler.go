@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/dto/common"
-	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/middleware"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/models/products"
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/interfaces"
 )
