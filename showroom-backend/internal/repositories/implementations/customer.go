@@ -271,7 +271,7 @@ func (r *CustomerRepository) List(ctx context.Context, params *master.CustomerFi
 
 	return &common.PaginatedResponse{
 		Data:       customers,
-		Total:      total,
+		Total: int(total),
 		Page:       params.Page,
 		Limit:      params.Limit,
 		TotalPages: params.GetTotalPages(total),

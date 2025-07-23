@@ -238,7 +238,7 @@ func (r *VehicleBrandRepository) List(ctx context.Context, params *master.Vehicl
 
 	return &common.PaginatedResponse{
 		Data:       brands,
-		Total:      total,
+		Total: int(total),
 		Page:       params.Page,
 		Limit:      params.Limit,
 		TotalPages: params.GetTotalPages(total),
@@ -512,7 +512,7 @@ func (r *VehicleCategoryRepository) List(ctx context.Context, params *master.Veh
 
 	return &common.PaginatedResponse{
 		Data:       categories,
-		Total:      total,
+		Total: int(total),
 		Page:       params.Page,
 		Limit:      params.Limit,
 		TotalPages: params.GetTotalPages(total),

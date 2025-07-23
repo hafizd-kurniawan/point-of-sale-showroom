@@ -290,7 +290,7 @@ func (r *PurchaseOrderPartsRepository) List(ctx context.Context, params *product
 
 	return &common.PaginatedResponse{
 		Data:       items,
-Total:      total,
+Total: int(total),
 Page:       params.Page,
 Limit:      params.Limit,
 TotalPages: params.GetTotalPages(total),
@@ -386,7 +386,7 @@ func (r *PurchaseOrderPartsRepository) GetPendingApproval(ctx context.Context, p
 
 	return &common.PaginatedResponse{
 		Data:       items,
-Total:      total,
+Total: int(total),
 Page:       params.Page,
 Limit:      params.Limit,
 TotalPages: params.GetTotalPages(total),
