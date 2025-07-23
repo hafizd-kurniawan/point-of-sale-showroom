@@ -131,3 +131,16 @@ type TransactionInspectionRequest struct {
 	EvaluationNotes   *string `json:"evaluation_notes,omitempty"`
 	RecommendedAction string  `json:"recommended_action" binding:"required,oneof=approve reject needs_repair"`
 }
+
+// TransactionDashboardStats represents dashboard statistics for transactions
+type TransactionDashboardStats struct {
+	TotalTransactions     int     `json:"total_transactions" db:"total_transactions"`
+	PendingTransactions   int     `json:"pending_transactions" db:"pending_transactions"`
+	CompletedTransactions int     `json:"completed_transactions" db:"completed_transactions"`
+	TotalPurchaseValue    float64 `json:"total_purchase_value" db:"total_purchase_value"`
+	MonthlyTransactions   int     `json:"monthly_transactions" db:"monthly_transactions"`
+	MonthlyValue          float64 `json:"monthly_value" db:"monthly_value"`
+	AvgTransactionValue   float64 `json:"avg_transaction_value" db:"avg_transaction_value"`
+	PendingInspections    int     `json:"pending_inspections" db:"pending_inspections"`
+	PendingApprovals      int     `json:"pending_approvals" db:"pending_approvals"`
+}
