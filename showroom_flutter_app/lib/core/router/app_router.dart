@@ -17,8 +17,9 @@ class AppRouter {
       final isLoggedIn = await storageService.isLoggedIn();
       
       // Check if we're on auth-related pages
-      final isAuthPage = state.location.startsWith('/auth');
-      final isSplashPage = state.location == '/splash';
+      final currentLocation = state.uri.toString();
+      final isAuthPage = currentLocation.startsWith('/auth');
+      final isSplashPage = currentLocation == '/splash';
       
       // If not logged in and not on auth/splash page, redirect to login
       if (!isLoggedIn && !isAuthPage && !isSplashPage) {
@@ -87,7 +88,7 @@ class AppRouter {
             ),
             const SizedBox(height: 16),
             Text(
-              'Page not found: ${state.location}',
+              'Page not found: ${state.uri}',
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),

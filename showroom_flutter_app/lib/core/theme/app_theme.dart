@@ -33,9 +33,25 @@ class AppTheme {
         900: primaryColorDark,
       }),
       primaryColor: primaryColor,
-      backgroundColor: backgroundColor,
       scaffoldBackgroundColor: backgroundColor,
       cardColor: surfaceColor,
+      colorScheme: ColorScheme.fromSwatch(
+        primarySwatch: MaterialColor(primaryColor.value, {
+          50: primaryColor.withOpacity(0.1),
+          100: primaryColor.withOpacity(0.2),
+          200: primaryColor.withOpacity(0.3),
+          300: primaryColor.withOpacity(0.4),
+          400: primaryColor.withOpacity(0.5),
+          500: primaryColor,
+          600: primaryColor.withOpacity(0.7),
+          700: primaryColor.withOpacity(0.8),
+          800: primaryColor.withOpacity(0.9),
+          900: primaryColorDark,
+        }),
+      ).copyWith(
+        background: backgroundColor,
+        surface: surfaceColor,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
@@ -199,9 +215,13 @@ class AppTheme {
   static ThemeData get darkTheme {
     return lightTheme.copyWith(
       brightness: Brightness.dark,
-      backgroundColor: const Color(0xFF121212),
       scaffoldBackgroundColor: const Color(0xFF121212),
       cardColor: const Color(0xFF1E1E1E),
+      colorScheme: lightTheme.colorScheme.copyWith(
+        brightness: Brightness.dark,
+        background: const Color(0xFF121212),
+        surface: const Color(0xFF1E1E1E),
+      ),
       textTheme: lightTheme.textTheme.apply(
         bodyColor: Colors.white,
         displayColor: Colors.white,

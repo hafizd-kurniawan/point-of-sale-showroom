@@ -3,6 +3,7 @@ import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
 import '../models/auth_model.dart';
+import '../models/user_model.dart';
 import '../../core/storage/storage_service.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -57,7 +58,7 @@ class AuthRepositoryImpl implements AuthRepository {
     
     return UserProfile(
       user: _mapUserModelToEntity(profileResponse.user),
-      sessions: profileResponse.sessions.map(_mapUserSessionModelToEntity).toList(),
+      sessions: profileResponse.sessions.map((session) => _mapUserSessionModelToEntity(session)).toList(),
     );
   }
 
