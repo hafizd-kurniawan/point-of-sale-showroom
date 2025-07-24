@@ -214,7 +214,7 @@ func (r *QualityInspectionRepository) ScheduleInspection(ctx context.Context, re
 		InspectionType:         request.InspectionType,
 		InspectionChecklistJSON: request.InspectionChecklistJSON,
 		QualityStandardsJSON:   request.QualityStandardsJSON,
-		ScheduledDate:          request.ScheduledDate,
+		ScheduledDate:          &request.ScheduledDate,
 		InspectorID:            request.InspectorID,
 	}
 

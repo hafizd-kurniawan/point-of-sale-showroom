@@ -24,20 +24,22 @@ func NewRepairWorkDetailRepository(db *sql.DB) interfaces.RepairWorkDetailReposi
 func (r *RepairWorkDetailRepository) Create(ctx context.Context, workDetail *repair.RepairWorkDetail) (*repair.RepairWorkDetail, error) {
 	query := `
 		INSERT INTO repair_work_details (
-			work_order_id, damage_id, task_description, estimated_hours,
-			task_priority, task_category, work_instructions, task_status
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			work_order_id, damage_id, task_sequence, task_description, task_type, 
+			estimated_hours, labor_rate, task_status, task_notes, assigned_mechanic_id
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING work_detail_id, created_at, updated_at`
 
 	err := r.db.QueryRowContext(ctx, query,
 		workDetail.WorkOrderID,
 		workDetail.DamageID,
+		workDetail.TaskSequence,
 		workDetail.TaskDescription,
+		workDetail.TaskType,
 		workDetail.EstimatedHours,
-		workDetail.TaskPriority,
-		workDetail.TaskCategory,
-		workDetail.WorkInstructions,
+		workDetail.LaborRate,
 		workDetail.TaskStatus,
+		workDetail.TaskNotes,
+		workDetail.AssignedMechanicID,
 	).Scan(&workDetail.WorkDetailID, &workDetail.CreatedAt, &workDetail.UpdatedAt)
 
 	if err != nil {
@@ -51,11 +53,12 @@ func (r *RepairWorkDetailRepository) Create(ctx context.Context, workDetail *rep
 func (r *RepairWorkDetailRepository) GetByID(ctx context.Context, id int) (*repair.RepairWorkDetail, error) {
 	query := `
 		SELECT 
-			rwd.work_detail_id, rwd.work_order_id, rwd.damage_id, rwd.task_description,
-			rwd.estimated_hours, rwd.actual_hours, rwd.task_priority, rwd.task_category,
-			rwd.work_instructions, rwd.task_status, rwd.assigned_mechanic_id, rwd.progress_percentage,
-			rwd.quality_check_status, rwd.completion_notes, rwd.start_time, rwd.end_time,
-			rwd.verified_by, rwd.verified_at, rwd.created_at, rwd.updated_at,
+			rwd.work_detail_id, rwd.work_order_id, rwd.damage_id, rwd.task_sequence,
+			rwd.task_description, rwd.task_type, rwd.estimated_hours, rwd.actual_hours,
+			rwd.labor_rate, rwd.task_status, rwd.start_date, rwd.end_date,
+			rwd.completion_percentage, rwd.task_notes, rwd.quality_check_passed,
+			rwd.assigned_mechanic_id, rwd.verified_by, rwd.verified_at, 
+			rwd.created_at, rwd.updated_at,
 			rwo.work_order_number,
 			vd.damage_description,
 			u1.full_name as assigned_mechanic_name,
@@ -72,19 +75,19 @@ func (r *RepairWorkDetailRepository) GetByID(ctx context.Context, id int) (*repa
 		&workDetail.WorkDetailID,
 		&workDetail.WorkOrderID,
 		&workDetail.DamageID,
+		&workDetail.TaskSequence,
 		&workDetail.TaskDescription,
+		&workDetail.TaskType,
 		&workDetail.EstimatedHours,
 		&workDetail.ActualHours,
-		&workDetail.TaskPriority,
-		&workDetail.TaskCategory,
-		&workDetail.WorkInstructions,
+		&workDetail.LaborRate,
 		&workDetail.TaskStatus,
+		&workDetail.StartDate,
+		&workDetail.EndDate,
+		&workDetail.CompletionPercentage,
+		&workDetail.TaskNotes,
+		&workDetail.QualityCheckPassed,
 		&workDetail.AssignedMechanicID,
-		&workDetail.ProgressPercentage,
-		&workDetail.QualityCheckStatus,
-		&workDetail.CompletionNotes,
-		&workDetail.StartTime,
-		&workDetail.EndTime,
 		&workDetail.VerifiedBy,
 		&workDetail.VerifiedAt,
 		&workDetail.CreatedAt,

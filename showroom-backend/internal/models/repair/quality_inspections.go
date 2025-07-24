@@ -30,6 +30,16 @@ type QualityInspection struct {
 	CreatedAt            time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt            time.Time  `json:"updated_at" db:"updated_at"`
 
+	// Additional fields for extended functionality and repository compatibility
+	InspectionChecklistJSON *string    `json:"inspection_checklist_json,omitempty" db:"inspection_checklist_json"`
+	QualityStandardsJSON   *string    `json:"quality_standards_json,omitempty" db:"quality_standards_json"`
+	ScheduledDate          *time.Time `json:"scheduled_date,omitempty" db:"scheduled_date"`
+	QualityScore           *int       `json:"quality_score,omitempty" db:"quality_score"`
+	PassFailStatus         *string    `json:"pass_fail_status,omitempty" db:"pass_fail_status"`
+	DefectsFoundJSON       *string    `json:"defects_found_json,omitempty" db:"defects_found_json"`
+	ReworkInstructions     *string    `json:"rework_instructions,omitempty" db:"rework_instructions"`
+	CompletionDate         *time.Time `json:"completion_date,omitempty" db:"completion_date"`
+
 	// Related data for joins
 	WorkOrderNumber   string `json:"work_order_number,omitempty" db:"work_order_number"`
 	TransactionNumber string `json:"transaction_number,omitempty" db:"transaction_number"`
@@ -54,6 +64,22 @@ type QualityInspectionListItem struct {
 	ReworkRequired      bool      `json:"rework_required" db:"rework_required"`
 	SignedOffBy         *int      `json:"signed_off_by,omitempty" db:"signed_off_by"`
 	SignedOffAt         *time.Time `json:"signed_off_at,omitempty" db:"signed_off_at"`
+}
+
+// CreateQualityInspectionRequest represents a request to create a quality inspection
+type CreateQualityInspectionRequest struct {
+	WorkOrderID         int     `json:"work_order_id" binding:"required"`
+	InspectionType      string  `json:"inspection_type" binding:"required,oneof=pre_repair during_repair post_repair final_inspection"`
+	OverallRating       int     `json:"overall_rating" binding:"required,min=1,max=10"`
+	WorkmanshipRating   int     `json:"workmanship_rating" binding:"required,min=1,max=10"`
+	SafetyRating        int     `json:"safety_rating" binding:"required,min=1,max=10"`
+	AppearanceRating    int     `json:"appearance_rating" binding:"required,min=1,max=10"`
+	FunctionalityRating int     `json:"functionality_rating" binding:"required,min=1,max=10"`
+	InspectionNotes     *string `json:"inspection_notes,omitempty"`
+	DefectsFound        *string `json:"defects_found,omitempty"`
+	Recommendations     *string `json:"recommendations,omitempty"`
+	PhotosJSON          *string `json:"photos_json,omitempty"`
+	ReworkRequired      bool    `json:"rework_required"`
 }
 
 // QualityInspectionCreateRequest represents a request to create a quality inspection
@@ -106,14 +132,17 @@ type QualityInspectionFilterParams struct {
 
 // InspectionSignOffRequest represents a request to sign off an inspection
 type InspectionSignOffRequest struct {
-	Status         string     `json:"status" binding:"required,oneof=passed failed conditional_pass"`
-	SignOffNotes   *string    `json:"sign_off_notes,omitempty"`
-	ReworkRequired *bool      `json:"rework_required,omitempty"`
+	InspectionStatus   string     `json:"inspection_status" binding:"required,oneof=passed failed conditional_pass needs_rework"`
+	PassFailStatus     string     `json:"pass_fail_status" binding:"required,oneof=pass fail"`
+	QualityScore       *int       `json:"quality_score,omitempty" binding:"omitempty,min=1,max=10"`
+	InspectionNotes    *string    `json:"inspection_notes,omitempty"`
+	ReworkRequired     *bool      `json:"rework_required,omitempty"`
 	NextInspectionDate *time.Time `json:"next_inspection_date,omitempty"`
 }
 
 // InspectionReworkRequest represents a request to schedule rework
 type InspectionReworkRequest struct {
+	ReworkInstructions  string     `json:"rework_instructions" binding:"required"`
 	ReworkDescription   string     `json:"rework_description" binding:"required"`
 	ReworkPriority     int        `json:"rework_priority" binding:"required,min=1,max=5"`
 	EstimatedHours     float64    `json:"estimated_hours" binding:"required,min=0"`
@@ -130,30 +159,43 @@ type QualityMetrics struct {
 	FailedInspections       int     `json:"failed_inspections" db:"failed_inspections"`
 	ConditionalPasses       int     `json:"conditional_passes" db:"conditional_passes"`
 	ReworksRequired         int     `json:"reworks_required" db:"reworks_required"`
+	ReworkRequiredCount     int     `json:"rework_required_count" db:"rework_required_count"`
 	AverageOverallRating    float64 `json:"average_overall_rating" db:"average_overall_rating"`
+	AverageQualityScore     float64 `json:"average_quality_score" db:"average_quality_score"`
 	AverageWorkmanshipRating float64 `json:"average_workmanship_rating" db:"average_workmanship_rating"`
 	AverageSafetyRating     float64 `json:"average_safety_rating" db:"average_safety_rating"`
 	AverageAppearanceRating float64 `json:"average_appearance_rating" db:"average_appearance_rating"`
 	AverageFunctionalityRating float64 `json:"average_functionality_rating" db:"average_functionality_rating"`
 	FirstTimePassRate       float64 `json:"first_time_pass_rate" db:"first_time_pass_rate"`
+	PassRate                float64 `json:"pass_rate" db:"pass_rate"`
 }
 
 // InspectionScheduleRequest represents a request to schedule an inspection
 type InspectionScheduleRequest struct {
-	InspectionType     string     `json:"inspection_type" binding:"required,oneof=pre_repair during_repair post_repair final_inspection"`
-	ScheduledDate      time.Time  `json:"scheduled_date" binding:"required"`
-	InspectorID        int        `json:"inspector_id" binding:"required"`
-	SpecialInstructions *string   `json:"special_instructions,omitempty"`
+	WorkOrderID             int        `json:"work_order_id" binding:"required"`
+	InspectionType         string     `json:"inspection_type" binding:"required,oneof=pre_repair during_repair post_repair final_inspection"`
+	InspectionChecklistJSON *string    `json:"inspection_checklist_json,omitempty"`
+	QualityStandardsJSON   *string    `json:"quality_standards_json,omitempty"`
+	ScheduledDate          time.Time  `json:"scheduled_date" binding:"required"`
+	InspectorID            int        `json:"inspector_id" binding:"required"`
+	SpecialInstructions    *string    `json:"special_instructions,omitempty"`
 }
 
 // InspectionDashboard represents dashboard data for quality inspections
 type InspectionDashboard struct {
 	TotalInspections       int     `json:"total_inspections" db:"total_inspections"`
+	ScheduledInspections   int     `json:"scheduled_inspections" db:"scheduled_inspections"`
+	InProgressInspections  int     `json:"in_progress_inspections" db:"in_progress_inspections"`
+	CompletedInspections   int     `json:"completed_inspections" db:"completed_inspections"`
 	PendingInspections     int     `json:"pending_inspections" db:"pending_inspections"`
 	CompletedToday         int     `json:"completed_today" db:"completed_today"`
+	PassedInspections      int     `json:"passed_inspections" db:"passed_inspections"`
+	FailedInspections      int     `json:"failed_inspections" db:"failed_inspections"`
+	ReworkRequiredCount    int     `json:"rework_required_count" db:"rework_required_count"`
 	PassRate               float64 `json:"pass_rate" db:"pass_rate"`
 	ReworkRate             float64 `json:"rework_rate" db:"rework_rate"`
 	AverageRating          float64 `json:"average_rating" db:"average_rating"`
+	OverallQualityScore    float64 `json:"overall_quality_score" db:"overall_quality_score"`
 	CriticalDefects        int     `json:"critical_defects" db:"critical_defects"`
 	OverdueInspections     int     `json:"overdue_inspections" db:"overdue_inspections"`
 }

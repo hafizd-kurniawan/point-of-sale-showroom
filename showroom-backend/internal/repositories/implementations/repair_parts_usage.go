@@ -25,9 +25,10 @@ func (r *RepairPartsUsageRepository) Create(ctx context.Context, usage *repair.R
 	query := `
 		INSERT INTO repair_parts_usage (
 			work_detail_id, product_id, quantity_used, unit_cost, total_cost,
-			usage_type, usage_notes, usage_status, issued_by
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING parts_usage_id, created_at, updated_at`
+			usage_type, part_condition, warranty_period_days, installation_notes, 
+			issued_by, used_by
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING usage_id, created_at`
 
 	err := r.db.QueryRowContext(ctx, query,
 		usage.WorkDetailID,
@@ -36,10 +37,12 @@ func (r *RepairPartsUsageRepository) Create(ctx context.Context, usage *repair.R
 		usage.UnitCost,
 		usage.TotalCost,
 		usage.UsageType,
-		usage.UsageNotes,
-		usage.UsageStatus,
+		usage.PartCondition,
+		usage.WarrantyPeriodDays,
+		usage.InstallationNotes,
 		usage.IssuedBy,
-	).Scan(&usage.PartsUsageID, &usage.CreatedAt, &usage.UpdatedAt)
+		usage.UsedBy,
+	).Scan(&usage.UsageID, &usage.CreatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repair parts usage: %w", err)
@@ -52,42 +55,49 @@ func (r *RepairPartsUsageRepository) Create(ctx context.Context, usage *repair.R
 func (r *RepairPartsUsageRepository) GetByID(ctx context.Context, id int) (*repair.RepairPartsUsage, error) {
 	query := `
 		SELECT 
-			rpu.parts_usage_id, rpu.work_detail_id, rpu.product_id, rpu.quantity_used,
-			rpu.unit_cost, rpu.total_cost, rpu.usage_type, rpu.usage_notes,
-			rpu.usage_status, rpu.issued_by, rpu.approved_by, rpu.issued_at,
-			rpu.approved_at, rpu.created_at, rpu.updated_at,
+			rpu.usage_id, rpu.work_detail_id, rpu.product_id, rpu.quantity_used,
+			rpu.unit_cost, rpu.total_cost, rpu.usage_date, rpu.usage_type,
+			rpu.part_condition, rpu.warranty_period_days, rpu.installation_notes,
+			rpu.issued_by, rpu.used_by, rpu.approved_by, rpu.approved_at, rpu.created_at,
 			p.product_name, p.product_code,
 			rwd.task_description,
+			rwo.work_order_number,
 			u1.full_name as issued_by_name,
-			u2.full_name as approved_by_name
+			u2.full_name as used_by_name,
+			u3.full_name as approved_by_name
 		FROM repair_parts_usage rpu
-		LEFT JOIN products p ON rpu.product_id = p.product_id
+		LEFT JOIN products_spare_parts p ON rpu.product_id = p.product_id
 		LEFT JOIN repair_work_details rwd ON rpu.work_detail_id = rwd.work_detail_id
+		LEFT JOIN repair_work_orders rwo ON rwd.work_order_id = rwo.work_order_id
 		LEFT JOIN users u1 ON rpu.issued_by = u1.user_id
-		LEFT JOIN users u2 ON rpu.approved_by = u2.user_id
-		WHERE rpu.parts_usage_id = $1`
+		LEFT JOIN users u2 ON rpu.used_by = u2.user_id
+		LEFT JOIN users u3 ON rpu.approved_by = u3.user_id
+		WHERE rpu.usage_id = $1`
 
 	usage := &repair.RepairPartsUsage{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&usage.PartsUsageID,
+		&usage.UsageID,
 		&usage.WorkDetailID,
 		&usage.ProductID,
 		&usage.QuantityUsed,
 		&usage.UnitCost,
 		&usage.TotalCost,
+		&usage.UsageDate,
 		&usage.UsageType,
-		&usage.UsageNotes,
-		&usage.UsageStatus,
+		&usage.PartCondition,
+		&usage.WarrantyPeriodDays,
+		&usage.InstallationNotes,
 		&usage.IssuedBy,
+		&usage.UsedBy,
 		&usage.ApprovedBy,
-		&usage.IssuedAt,
 		&usage.ApprovedAt,
 		&usage.CreatedAt,
-		&usage.UpdatedAt,
 		&usage.ProductName,
 		&usage.ProductCode,
 		&usage.TaskDescription,
+		&usage.WorkOrderNumber,
 		&usage.IssuedByName,
+		&usage.UsedByName,
 		&usage.ApprovedByName,
 	)
 
@@ -106,31 +116,32 @@ func (r *RepairPartsUsageRepository) Update(ctx context.Context, id int, usage *
 	query := `
 		UPDATE repair_parts_usage SET
 			quantity_used = $1, unit_cost = $2, total_cost = $3,
-			usage_type = $4, usage_notes = $5, usage_status = $6, updated_at = NOW()
-		WHERE parts_usage_id = $7
-		RETURNING updated_at`
+			usage_type = $4, part_condition = $5, warranty_period_days = $6,
+			installation_notes = $7
+		WHERE usage_id = $8`
 
-	err := r.db.QueryRowContext(ctx, query,
+	_, err := r.db.ExecContext(ctx, query,
 		usage.QuantityUsed,
 		usage.UnitCost,
 		usage.TotalCost,
 		usage.UsageType,
-		usage.UsageNotes,
-		usage.UsageStatus,
+		usage.PartCondition,
+		usage.WarrantyPeriodDays,
+		usage.InstallationNotes,
 		id,
-	).Scan(&usage.UpdatedAt)
+	)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to update repair parts usage: %w", err)
 	}
 
-	usage.PartsUsageID = id
+	usage.UsageID = id
 	return usage, nil
 }
 
 // Delete deletes a repair parts usage record
 func (r *RepairPartsUsageRepository) Delete(ctx context.Context, id int) error {
-	query := `DELETE FROM repair_parts_usage WHERE parts_usage_id = $1`
+	query := `DELETE FROM repair_parts_usage WHERE usage_id = $1`
 
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
@@ -173,45 +184,64 @@ func (r *RepairPartsUsageRepository) IssuePartsForRepair(ctx context.Context, wo
 	}
 	defer tx.Rollback()
 
-	// Create parts usage record
+	// Create parts usage records for each item
 	query := `
 		INSERT INTO repair_parts_usage (
 			work_detail_id, product_id, quantity_used, unit_cost, total_cost,
-			usage_type, usage_notes, usage_status, issued_by, issued_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, 'issued', $8, NOW())`
+			usage_type, part_condition, warranty_period_days, installation_notes, 
+			issued_by, used_by
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
 
-	_, err = tx.ExecContext(ctx, query,
-		workDetailID,
-		request.ProductID,
-		request.QuantityUsed,
-		request.UnitCost,
-		request.TotalCost,
-		request.UsageType,
-		request.UsageNotes,
-		issuedBy,
-	)
+	// Get unit cost for each product to calculate total cost
+	costQuery := `SELECT cost_price FROM products_spare_parts WHERE product_id = $1`
 
-	if err != nil {
-		return fmt.Errorf("failed to create parts usage record: %w", err)
-	}
+	for _, item := range request.Items {
+		var unitCost float64
+		err = tx.QueryRowContext(ctx, costQuery, item.ProductID).Scan(&unitCost)
+		if err != nil {
+			return fmt.Errorf("failed to get product cost for product %d: %w", item.ProductID, err)
+		}
 
-	// Update stock movement (this would integrate with stock system)
-	// This is a simplified version - in reality you'd need to properly integrate with the stock management
-	stockQuery := `
-		INSERT INTO stock_movements (
-			product_id, movement_type, quantity, reference_type, reference_id,
-			movement_reason, created_by
-		) VALUES ($1, 'OUT', $2, 'repair_usage', $3, 'Parts used for repair', $4)`
+		totalCost := unitCost * float64(item.QuantityRequested)
 
-	_, err = tx.ExecContext(ctx, stockQuery,
-		request.ProductID,
-		request.QuantityUsed,
-		workDetailID,
-		issuedBy,
-	)
+		_, err = tx.ExecContext(ctx, query,
+			workDetailID,
+			item.ProductID,
+			item.QuantityRequested,
+			unitCost,
+			totalCost,
+			item.UsageType,
+			item.PartCondition,
+			item.WarrantyPeriodDays,
+			item.InstallationNotes,
+			issuedBy,
+			issuedBy, // For now, issued_by and used_by are the same
+		)
 
-	if err != nil {
-		return fmt.Errorf("failed to create stock movement: %w", err)
+		if err != nil {
+			return fmt.Errorf("failed to create parts usage record for product %d: %w", item.ProductID, err)
+		}
+
+		// Update stock movement (this would integrate with stock system)
+		stockQuery := `
+			INSERT INTO stock_movements (
+				product_id, movement_type, reference_type, reference_id,
+				quantity_before, quantity_moved, quantity_after, unit_cost, total_value,
+				movement_reason, processed_by
+			) VALUES ($1, 'out', 'repair', $2, 0, $3, 0, $4, $5, 'Parts used for repair', $6)`
+
+		_, err = tx.ExecContext(ctx, stockQuery,
+			item.ProductID,
+			workDetailID,
+			item.QuantityRequested,
+			unitCost,
+			totalCost,
+			issuedBy,
+		)
+
+		if err != nil {
+			return fmt.Errorf("failed to create stock movement for product %d: %w", item.ProductID, err)
+		}
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -225,10 +255,15 @@ func (r *RepairPartsUsageRepository) IssuePartsForRepair(ctx context.Context, wo
 func (r *RepairPartsUsageRepository) GetPartsUsageSummary(ctx context.Context, workOrderID int) (*repair.PartsUsageSummary, error) {
 	query := `
 		SELECT 
-			COUNT(DISTINCT rpu.parts_usage_id) as total_parts_used,
+			COUNT(DISTINCT rpu.usage_id) as total_parts_used,
 			COALESCE(SUM(rpu.total_cost), 0) as total_parts_cost,
-			COUNT(DISTINCT rpu.product_id) as unique_parts_count,
-			COALESCE(SUM(rpu.quantity_used), 0) as total_quantity_used
+			COUNT(CASE WHEN rpu.usage_type = 'new' THEN 1 END) as new_parts,
+			COUNT(CASE WHEN rpu.usage_type = 'replacement' THEN 1 END) as replacement_parts,
+			COUNT(CASE WHEN rpu.usage_type = 'warranty' THEN 1 END) as warranty_parts,
+			COUNT(CASE WHEN rpu.part_condition = 'oem' THEN 1 END) as oem_parts,
+			COUNT(CASE WHEN rpu.part_condition = 'aftermarket' THEN 1 END) as aftermarket_parts,
+			COUNT(CASE WHEN rpu.approved_by IS NOT NULL THEN 1 END) as approved_usage,
+			COUNT(CASE WHEN rpu.approved_by IS NULL THEN 1 END) as pending_approval
 		FROM repair_parts_usage rpu
 		JOIN repair_work_details rwd ON rpu.work_detail_id = rwd.work_detail_id
 		WHERE rwd.work_order_id = $1`
@@ -237,8 +272,13 @@ func (r *RepairPartsUsageRepository) GetPartsUsageSummary(ctx context.Context, w
 	err := r.db.QueryRowContext(ctx, query, workOrderID).Scan(
 		&summary.TotalPartsUsed,
 		&summary.TotalPartsCost,
-		&summary.UniquePartsCount,
-		&summary.TotalQuantityUsed,
+		&summary.NewParts,
+		&summary.ReplacementParts,
+		&summary.WarrantyParts,
+		&summary.OEMParts,
+		&summary.AftermarketParts,
+		&summary.ApprovedUsage,
+		&summary.PendingApproval,
 	)
 
 	if err != nil {
@@ -255,15 +295,17 @@ func (r *RepairPartsUsageRepository) GetInventoryImpact(ctx context.Context, wor
 	query := `
 		SELECT 
 			p.product_id, p.product_name, p.product_code,
-			COALESCE(SUM(rpu.quantity_used), 0) as total_used,
-			COALESCE(SUM(rpu.total_cost), 0) as total_cost,
-			p.current_stock,
-			(p.current_stock - COALESCE(SUM(rpu.quantity_used), 0)) as remaining_stock
+			COALESCE(SUM(rpu.quantity_used), 0) as quantity_used,
+			COALESCE(SUM(rpu.total_cost), 0) as total_value,
+			p.stock_quantity as quantity_before,
+			(p.stock_quantity - COALESCE(SUM(rpu.quantity_used), 0)) as quantity_after,
+			CASE WHEN (p.stock_quantity - COALESCE(SUM(rpu.quantity_used), 0)) < p.min_stock_level THEN true ELSE false END as low_stock_alert,
+			CASE WHEN (p.stock_quantity - COALESCE(SUM(rpu.quantity_used), 0)) <= p.min_stock_level THEN true ELSE false END as reorder_required
 		FROM repair_parts_usage rpu
 		JOIN repair_work_details rwd ON rpu.work_detail_id = rwd.work_detail_id
-		JOIN products p ON rpu.product_id = p.product_id
+		JOIN products_spare_parts p ON rpu.product_id = p.product_id
 		WHERE rwd.work_order_id = $1
-		GROUP BY p.product_id, p.product_name, p.product_code, p.current_stock`
+		GROUP BY p.product_id, p.product_name, p.product_code, p.stock_quantity, p.min_stock_level`
 
 	rows, err := r.db.QueryContext(ctx, query, workOrderID)
 	if err != nil {
@@ -278,16 +320,17 @@ func (r *RepairPartsUsageRepository) GetInventoryImpact(ctx context.Context, wor
 			&impact.ProductID,
 			&impact.ProductName,
 			&impact.ProductCode,
-			&impact.TotalUsed,
-			&impact.TotalCost,
-			&impact.CurrentStock,
-			&impact.RemainingStock,
+			&impact.QuantityUsed,
+			&impact.TotalValue,
+			&impact.QuantityBefore,
+			&impact.QuantityAfter,
+			&impact.LowStockAlert,
+			&impact.ReorderRequired,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan inventory impact: %w", err)
 		}
 
-		impact.WorkOrderID = workOrderID
 		impacts = append(impacts, impact)
 	}
 

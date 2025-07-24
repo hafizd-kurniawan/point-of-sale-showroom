@@ -344,11 +344,18 @@ func (s *RepairService) CreateInspection(ctx context.Context, req *repair.Create
 	inspection := &repair.QualityInspection{
 		WorkOrderID:             req.WorkOrderID,
 		InspectionType:         req.InspectionType,
-		InspectionChecklistJSON: req.InspectionChecklistJSON,
-		QualityStandardsJSON:   req.QualityStandardsJSON,
+		OverallRating:          req.OverallRating,
+		WorkmanshipRating:      req.WorkmanshipRating,
+		SafetyRating:           req.SafetyRating,
+		AppearanceRating:       req.AppearanceRating,
+		FunctionalityRating:    req.FunctionalityRating,
 		InspectionStatus:       "scheduled",
-		ScheduledDate:          req.ScheduledDate,
-		InspectorID:            req.InspectorID,
+		InspectionNotes:        req.InspectionNotes,
+		DefectsFound:          req.DefectsFound,
+		Recommendations:       req.Recommendations,
+		PhotosJSON:            req.PhotosJSON,
+		ReworkRequired:        req.ReworkRequired,
+		InspectorID:           req.InspectorID,
 	}
 
 	return s.qualityInspectionRepo.Create(ctx, inspection)
