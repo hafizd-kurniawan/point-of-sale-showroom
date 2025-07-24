@@ -20,6 +20,7 @@ class _SplashPageState extends State<SplashPage>
   @override
   void initState() {
     super.initState();
+    print('SplashPage initState called');
     _setupAnimations();
     _checkAuthStatus();
   }
@@ -50,9 +51,20 @@ class _SplashPageState extends State<SplashPage>
   }
 
   void _checkAuthStatus() {
-    // Delay to show splash screen, then check auth
+    // Add the AuthBloc listener to trigger auth check
     Future.delayed(const Duration(seconds: 2), () {
-      context.read<AuthBloc>().add(AuthCheckRequested());
+      if (mounted) {
+        try {
+          print('Triggering auth check');
+          context.read<AuthBloc>().add(AuthCheckRequested());
+        } catch (e) {
+          print('Failed to trigger auth check: $e');
+          // If AuthBloc is not available, navigate to login
+          if (mounted) {
+            context.go('/auth/login');
+          }
+        }
+      }
     });
   }
 
@@ -66,6 +78,7 @@ class _SplashPageState extends State<SplashPage>
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        print('Auth state changed: ${state.runtimeType}');
         if (state is AuthAuthenticated) {
           // Navigate based on user role
           switch (state.user.role) {
@@ -80,6 +93,9 @@ class _SplashPageState extends State<SplashPage>
               context.go('/auth/login');
           }
         } else if (state is AuthUnauthenticated) {
+          context.go('/auth/login');
+        } else if (state is AuthError) {
+          print('Auth error: ${state.message}');
           context.go('/auth/login');
         }
       },

@@ -129,9 +129,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     try {
+      print('Auth check requested');
       final isLoggedIn = await _checkAuthStatusUseCase();
+      print('Is logged in: $isLoggedIn');
+      
       if (isLoggedIn) {
         final cachedUser = await _getCachedUserUseCase();
+        print('Cached user: $cachedUser');
+        
         if (cachedUser != null) {
           emit(AuthAuthenticated(cachedUser));
         } else {
@@ -140,6 +145,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             final user = await _getCurrentUserUseCase();
             emit(AuthAuthenticated(user));
           } catch (e) {
+            print('Failed to get current user: $e');
             // If failed, user needs to login again
             emit(AuthUnauthenticated());
           }
@@ -148,6 +154,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthUnauthenticated());
       }
     } catch (e) {
+      print('Auth check failed: $e');
       emit(AuthUnauthenticated());
     }
   }

@@ -11,47 +11,21 @@ import '../../presentation/pages/mechanic/mechanic_dashboard_page.dart';
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/splash',
-    redirect: (BuildContext context, GoRouterState state) async {
-      // Get auth status from storage
-      final storageService = DependencyInjection.getIt<StorageService>();
-      final isLoggedIn = await storageService.isLoggedIn();
-      
-      // Check if we're on auth-related pages
-      final currentLocation = state.uri.toString();
-      final isAuthPage = currentLocation.startsWith('/auth');
-      final isSplashPage = currentLocation == '/splash';
-      
-      // If not logged in and not on auth/splash page, redirect to login
-      if (!isLoggedIn && !isAuthPage && !isSplashPage) {
-        return '/auth/login';
-      }
-      
-      // If logged in and on auth page, redirect to appropriate dashboard
-      if (isLoggedIn && isAuthPage) {
-        final userData = await storageService.getUserData();
-        if (userData != null) {
-          final userRole = userData['role'] as String;
-          switch (userRole) {
-            case 'cashier':
-              return '/cashier';
-            case 'mechanic':
-              return '/mechanic';
-            default:
-              return '/auth/login'; // Unsupported role
-          }
-        }
-      }
-      
-      return null;
-    },
+    debugLogDiagnostics: true, // Enable debug logging
     routes: [
       GoRoute(
         path: '/splash',
-        builder: (context, state) => const SplashPage(),
+        builder: (context, state) {
+          print('Building SplashPage');
+          return const SplashPage();
+        },
       ),
       GoRoute(
         path: '/auth/login',
-        builder: (context, state) => const LoginPage(),
+        builder: (context, state) {
+          print('Building LoginPage');
+          return const LoginPage();
+        },
       ),
       GoRoute(
         path: '/cashier',
@@ -74,6 +48,11 @@ class AppRouter {
           ),
           // Add more mechanic-specific routes here
         ],
+      ),
+      // Fallback route to login for root path
+      GoRoute(
+        path: '/',
+        redirect: (context, state) => '/splash',
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
