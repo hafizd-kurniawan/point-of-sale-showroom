@@ -28,6 +28,17 @@ func RunMigrations(db *sql.DB) error {
 		createStockAdjustmentsTable,
 		createSupplierPaymentsTable,
 		createPhase3Indexes,
+		// Phase 4: Vehicle Purchase Flow
+		createVehiclePurchaseTransactionsTable,
+		createVehiclePurchasePaymentsTable,
+		createPhase4Indexes,
+		// Phase 5: Repair Management
+		createVehicleDamagesTable,
+		createRepairWorkOrdersTable,
+		createRepairWorkDetailsTable,
+		createRepairPartsUsageTable,
+		createQualityInspectionsTable,
+		createPhase5Indexes,
 	}
 
 	for i, migration := range migrations {
@@ -497,3 +508,248 @@ CREATE INDEX IF NOT EXISTS idx_supplier_payments_due_date ON supplier_payments(d
 CREATE INDEX IF NOT EXISTS idx_supplier_payments_method ON supplier_payments(payment_method);
 CREATE INDEX IF NOT EXISTS idx_supplier_payments_processed_by ON supplier_payments(processed_by);
 CREATE INDEX IF NOT EXISTS idx_supplier_payments_invoice_number ON supplier_payments(invoice_number);`
+
+// Phase 4: Vehicle Purchase Flow Tables
+
+const createVehiclePurchaseTransactionsTable = `
+CREATE TABLE IF NOT EXISTS vehicle_purchase_transactions (
+    transaction_id SERIAL PRIMARY KEY,
+    transaction_number VARCHAR(20) UNIQUE NOT NULL,
+    customer_id INTEGER NOT NULL REFERENCES customers(customer_id),
+    vehicle_id INTEGER,
+    vin_number VARCHAR(50),
+    vehicle_brand VARCHAR(100) NOT NULL,
+    vehicle_model VARCHAR(100) NOT NULL,
+    vehicle_year INTEGER NOT NULL CHECK (vehicle_year >= 1900 AND vehicle_year <= 2100),
+    vehicle_color VARCHAR(50) NOT NULL,
+    engine_number VARCHAR(100),
+    registration_number VARCHAR(50),
+    purchase_price DECIMAL(15,2) NOT NULL CHECK (purchase_price >= 0),
+    agreed_value DECIMAL(15,2) NOT NULL CHECK (agreed_value >= 0),
+    odometer_reading INTEGER DEFAULT 0 CHECK (odometer_reading >= 0),
+    fuel_type VARCHAR(50) NOT NULL,
+    transmission VARCHAR(50) NOT NULL,
+    condition_rating INTEGER CHECK (condition_rating >= 1 AND condition_rating <= 10),
+    purchase_date TIMESTAMP NOT NULL DEFAULT NOW(),
+    transaction_status VARCHAR(20) NOT NULL CHECK (transaction_status IN ('pending','inspection','approved','rejected','completed','cancelled')) DEFAULT 'pending',
+    inspection_notes TEXT,
+    evaluation_notes TEXT,
+    purchase_notes TEXT,
+    documents_json TEXT,
+    processed_by INTEGER NOT NULL REFERENCES users(user_id),
+    inspected_by INTEGER REFERENCES users(user_id),
+    approved_by INTEGER REFERENCES users(user_id),
+    approved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);`
+
+const createVehiclePurchasePaymentsTable = `
+CREATE TABLE IF NOT EXISTS vehicle_purchase_payments (
+    payment_id SERIAL PRIMARY KEY,
+    transaction_id INTEGER NOT NULL REFERENCES vehicle_purchase_transactions(transaction_id) ON DELETE CASCADE,
+    payment_number VARCHAR(20) UNIQUE NOT NULL,
+    payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('cash','transfer','check','financing')) DEFAULT 'cash',
+    payment_amount DECIMAL(15,2) NOT NULL CHECK (payment_amount >= 0),
+    payment_date TIMESTAMP NOT NULL DEFAULT NOW(),
+    payment_status VARCHAR(20) NOT NULL CHECK (payment_status IN ('pending','processing','completed','failed','cancelled')) DEFAULT 'pending',
+    reference_number VARCHAR(100),
+    bank_account VARCHAR(100),
+    payment_description TEXT,
+    payment_notes TEXT,
+    processed_by INTEGER NOT NULL REFERENCES users(user_id),
+    approved_by INTEGER REFERENCES users(user_id),
+    approved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);`
+
+const createPhase4Indexes = `
+-- Vehicle purchase transactions table indexes
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_transactions_number ON vehicle_purchase_transactions(transaction_number);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_transactions_customer_id ON vehicle_purchase_transactions(customer_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_transactions_vin ON vehicle_purchase_transactions(vin_number);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_transactions_status ON vehicle_purchase_transactions(transaction_status);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_transactions_purchase_date ON vehicle_purchase_transactions(purchase_date);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_transactions_processed_by ON vehicle_purchase_transactions(processed_by);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_transactions_inspected_by ON vehicle_purchase_transactions(inspected_by);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_transactions_approved_by ON vehicle_purchase_transactions(approved_by);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_transactions_brand ON vehicle_purchase_transactions(vehicle_brand);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_transactions_model ON vehicle_purchase_transactions(vehicle_model);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_transactions_year ON vehicle_purchase_transactions(vehicle_year);
+
+-- Vehicle purchase payments table indexes
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_payments_number ON vehicle_purchase_payments(payment_number);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_payments_transaction_id ON vehicle_purchase_payments(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_payments_status ON vehicle_purchase_payments(payment_status);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_payments_method ON vehicle_purchase_payments(payment_method);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_payments_date ON vehicle_purchase_payments(payment_date);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_payments_processed_by ON vehicle_purchase_payments(processed_by);
+CREATE INDEX IF NOT EXISTS idx_vehicle_purchase_payments_approved_by ON vehicle_purchase_payments(approved_by);`
+
+// Phase 5: Repair Management Tables
+
+const createVehicleDamagesTable = `
+CREATE TABLE IF NOT EXISTS vehicle_damages (
+    damage_id SERIAL PRIMARY KEY,
+    transaction_id INTEGER NOT NULL REFERENCES vehicle_purchase_transactions(transaction_id) ON DELETE CASCADE,
+    damage_category VARCHAR(50) NOT NULL CHECK (damage_category IN ('body','engine','interior','electrical','suspension','brake','transmission','other')),
+    damage_type VARCHAR(100) NOT NULL,
+    damage_severity VARCHAR(20) NOT NULL CHECK (damage_severity IN ('minor','moderate','major','critical')) DEFAULT 'minor',
+    damage_location VARCHAR(100) NOT NULL,
+    damage_description TEXT NOT NULL,
+    estimated_cost DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (estimated_cost >= 0),
+    repair_priority INTEGER NOT NULL DEFAULT 3 CHECK (repair_priority >= 1 AND repair_priority <= 5),
+    repair_required BOOLEAN NOT NULL DEFAULT TRUE,
+    damage_photos_json TEXT,
+    assessment_notes TEXT,
+    identified_by INTEGER NOT NULL REFERENCES users(user_id),
+    identified_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('identified','assessed','scheduled','repairing','completed','cancelled')) DEFAULT 'identified',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);`
+
+const createRepairWorkOrdersTable = `
+CREATE TABLE IF NOT EXISTS repair_work_orders (
+    work_order_id SERIAL PRIMARY KEY,
+    work_order_number VARCHAR(20) UNIQUE NOT NULL,
+    transaction_id INTEGER NOT NULL REFERENCES vehicle_purchase_transactions(transaction_id),
+    work_order_type VARCHAR(20) NOT NULL CHECK (work_order_type IN ('inspection','repair','maintenance','improvement')) DEFAULT 'repair',
+    work_order_priority INTEGER NOT NULL DEFAULT 3 CHECK (work_order_priority >= 1 AND work_order_priority <= 5),
+    scheduled_start_date TIMESTAMP,
+    scheduled_end_date TIMESTAMP,
+    actual_start_date TIMESTAMP,
+    actual_end_date TIMESTAMP,
+    estimated_cost DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (estimated_cost >= 0),
+    actual_cost DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (actual_cost >= 0),
+    labor_hours_estimated DECIMAL(8,2) NOT NULL DEFAULT 0 CHECK (labor_hours_estimated >= 0),
+    labor_hours_actual DECIMAL(8,2) NOT NULL DEFAULT 0 CHECK (labor_hours_actual >= 0),
+    work_order_status VARCHAR(20) NOT NULL CHECK (work_order_status IN ('draft','scheduled','in_progress','suspended','completed','cancelled')) DEFAULT 'draft',
+    work_description TEXT NOT NULL,
+    special_instructions TEXT,
+    completion_notes TEXT,
+    assigned_mechanic_id INTEGER REFERENCES users(user_id),
+    supervisor_id INTEGER REFERENCES users(user_id),
+    created_by INTEGER NOT NULL REFERENCES users(user_id),
+    approved_by INTEGER REFERENCES users(user_id),
+    approved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);`
+
+const createRepairWorkDetailsTable = `
+CREATE TABLE IF NOT EXISTS repair_work_details (
+    work_detail_id SERIAL PRIMARY KEY,
+    work_order_id INTEGER NOT NULL REFERENCES repair_work_orders(work_order_id) ON DELETE CASCADE,
+    damage_id INTEGER REFERENCES vehicle_damages(damage_id),
+    task_sequence INTEGER NOT NULL DEFAULT 1,
+    task_description TEXT NOT NULL,
+    task_type VARCHAR(50) NOT NULL CHECK (task_type IN ('diagnosis','disassembly','repair','replacement','assembly','testing','quality_check')),
+    estimated_hours DECIMAL(8,2) NOT NULL DEFAULT 0 CHECK (estimated_hours >= 0),
+    actual_hours DECIMAL(8,2) NOT NULL DEFAULT 0 CHECK (actual_hours >= 0),
+    labor_rate DECIMAL(8,2) NOT NULL DEFAULT 0 CHECK (labor_rate >= 0),
+    task_status VARCHAR(20) NOT NULL CHECK (task_status IN ('pending','in_progress','completed','cancelled','on_hold')) DEFAULT 'pending',
+    start_date TIMESTAMP,
+    end_date TIMESTAMP,
+    completion_percentage INTEGER NOT NULL DEFAULT 0 CHECK (completion_percentage >= 0 AND completion_percentage <= 100),
+    task_notes TEXT,
+    quality_check_passed BOOLEAN,
+    assigned_mechanic_id INTEGER REFERENCES users(user_id),
+    verified_by INTEGER REFERENCES users(user_id),
+    verified_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);`
+
+const createRepairPartsUsageTable = `
+CREATE TABLE IF NOT EXISTS repair_parts_usage (
+    usage_id SERIAL PRIMARY KEY,
+    work_detail_id INTEGER NOT NULL REFERENCES repair_work_details(work_detail_id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products_spare_parts(product_id),
+    quantity_used INTEGER NOT NULL CHECK (quantity_used > 0),
+    unit_cost DECIMAL(15,2) NOT NULL CHECK (unit_cost >= 0),
+    total_cost DECIMAL(15,2) NOT NULL CHECK (total_cost >= 0),
+    usage_date TIMESTAMP NOT NULL DEFAULT NOW(),
+    usage_type VARCHAR(20) NOT NULL CHECK (usage_type IN ('new','replacement','additional','warranty')) DEFAULT 'new',
+    part_condition VARCHAR(20) NOT NULL CHECK (part_condition IN ('new','refurbished','used','oem','aftermarket')) DEFAULT 'new',
+    warranty_period_days INTEGER DEFAULT 0 CHECK (warranty_period_days >= 0),
+    installation_notes TEXT,
+    issued_by INTEGER NOT NULL REFERENCES users(user_id),
+    used_by INTEGER NOT NULL REFERENCES users(user_id),
+    approved_by INTEGER REFERENCES users(user_id),
+    approved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);`
+
+const createQualityInspectionsTable = `
+CREATE TABLE IF NOT EXISTS quality_inspections (
+    inspection_id SERIAL PRIMARY KEY,
+    work_order_id INTEGER NOT NULL REFERENCES repair_work_orders(work_order_id),
+    inspection_type VARCHAR(20) NOT NULL CHECK (inspection_type IN ('pre_repair','during_repair','post_repair','final_inspection')) DEFAULT 'post_repair',
+    inspection_date TIMESTAMP NOT NULL DEFAULT NOW(),
+    inspector_id INTEGER NOT NULL REFERENCES users(user_id),
+    overall_rating INTEGER NOT NULL CHECK (overall_rating >= 1 AND overall_rating <= 10),
+    workmanship_rating INTEGER NOT NULL CHECK (workmanship_rating >= 1 AND workmanship_rating <= 10),
+    safety_rating INTEGER NOT NULL CHECK (safety_rating >= 1 AND safety_rating <= 10),
+    appearance_rating INTEGER NOT NULL CHECK (appearance_rating >= 1 AND appearance_rating <= 10),
+    functionality_rating INTEGER NOT NULL CHECK (functionality_rating >= 1 AND functionality_rating <= 10),
+    inspection_status VARCHAR(20) NOT NULL CHECK (inspection_status IN ('passed','failed','conditional_pass','needs_rework')) DEFAULT 'passed',
+    inspection_notes TEXT,
+    defects_found TEXT,
+    recommendations TEXT,
+    photos_json TEXT,
+    signed_off_by INTEGER REFERENCES users(user_id),
+    signed_off_at TIMESTAMP,
+    rework_required BOOLEAN NOT NULL DEFAULT FALSE,
+    next_inspection_date TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);`
+
+const createPhase5Indexes = `
+-- Vehicle damages table indexes
+CREATE INDEX IF NOT EXISTS idx_vehicle_damages_transaction_id ON vehicle_damages(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_damages_category ON vehicle_damages(damage_category);
+CREATE INDEX IF NOT EXISTS idx_vehicle_damages_severity ON vehicle_damages(damage_severity);
+CREATE INDEX IF NOT EXISTS idx_vehicle_damages_status ON vehicle_damages(status);
+CREATE INDEX IF NOT EXISTS idx_vehicle_damages_identified_by ON vehicle_damages(identified_by);
+CREATE INDEX IF NOT EXISTS idx_vehicle_damages_identified_at ON vehicle_damages(identified_at);
+CREATE INDEX IF NOT EXISTS idx_vehicle_damages_repair_priority ON vehicle_damages(repair_priority);
+
+-- Repair work orders table indexes
+CREATE INDEX IF NOT EXISTS idx_repair_work_orders_number ON repair_work_orders(work_order_number);
+CREATE INDEX IF NOT EXISTS idx_repair_work_orders_transaction_id ON repair_work_orders(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_repair_work_orders_status ON repair_work_orders(work_order_status);
+CREATE INDEX IF NOT EXISTS idx_repair_work_orders_type ON repair_work_orders(work_order_type);
+CREATE INDEX IF NOT EXISTS idx_repair_work_orders_priority ON repair_work_orders(work_order_priority);
+CREATE INDEX IF NOT EXISTS idx_repair_work_orders_assigned_mechanic ON repair_work_orders(assigned_mechanic_id);
+CREATE INDEX IF NOT EXISTS idx_repair_work_orders_supervisor ON repair_work_orders(supervisor_id);
+CREATE INDEX IF NOT EXISTS idx_repair_work_orders_created_by ON repair_work_orders(created_by);
+CREATE INDEX IF NOT EXISTS idx_repair_work_orders_scheduled_start ON repair_work_orders(scheduled_start_date);
+CREATE INDEX IF NOT EXISTS idx_repair_work_orders_scheduled_end ON repair_work_orders(scheduled_end_date);
+
+-- Repair work details table indexes
+CREATE INDEX IF NOT EXISTS idx_repair_work_details_work_order_id ON repair_work_details(work_order_id);
+CREATE INDEX IF NOT EXISTS idx_repair_work_details_damage_id ON repair_work_details(damage_id);
+CREATE INDEX IF NOT EXISTS idx_repair_work_details_status ON repair_work_details(task_status);
+CREATE INDEX IF NOT EXISTS idx_repair_work_details_type ON repair_work_details(task_type);
+CREATE INDEX IF NOT EXISTS idx_repair_work_details_assigned_mechanic ON repair_work_details(assigned_mechanic_id);
+CREATE INDEX IF NOT EXISTS idx_repair_work_details_sequence ON repair_work_details(task_sequence);
+
+-- Repair parts usage table indexes
+CREATE INDEX IF NOT EXISTS idx_repair_parts_usage_work_detail_id ON repair_parts_usage(work_detail_id);
+CREATE INDEX IF NOT EXISTS idx_repair_parts_usage_product_id ON repair_parts_usage(product_id);
+CREATE INDEX IF NOT EXISTS idx_repair_parts_usage_date ON repair_parts_usage(usage_date);
+CREATE INDEX IF NOT EXISTS idx_repair_parts_usage_type ON repair_parts_usage(usage_type);
+CREATE INDEX IF NOT EXISTS idx_repair_parts_usage_issued_by ON repair_parts_usage(issued_by);
+CREATE INDEX IF NOT EXISTS idx_repair_parts_usage_used_by ON repair_parts_usage(used_by);
+
+-- Quality inspections table indexes
+CREATE INDEX IF NOT EXISTS idx_quality_inspections_work_order_id ON quality_inspections(work_order_id);
+CREATE INDEX IF NOT EXISTS idx_quality_inspections_type ON quality_inspections(inspection_type);
+CREATE INDEX IF NOT EXISTS idx_quality_inspections_status ON quality_inspections(inspection_status);
+CREATE INDEX IF NOT EXISTS idx_quality_inspections_inspector_id ON quality_inspections(inspector_id);
+CREATE INDEX IF NOT EXISTS idx_quality_inspections_date ON quality_inspections(inspection_date);
+CREATE INDEX IF NOT EXISTS idx_quality_inspections_overall_rating ON quality_inspections(overall_rating);
+CREATE INDEX IF NOT EXISTS idx_quality_inspections_signed_off_by ON quality_inspections(signed_off_by);`

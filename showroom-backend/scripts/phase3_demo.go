@@ -13,7 +13,7 @@ import (
 	"github.com/hafizd-kurniawan/point-of-sale-showroom/showroom-backend/internal/repositories/implementations"
 )
 
-func main() {
+func mainPhase3Demo() {
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using system environment variables")
@@ -70,7 +70,7 @@ func main() {
 	sampleProduct := &products.ProductSparePart{
 		ProductCode:      "", // Will be auto-generated
 		ProductName:      "Sample Brake Pad",
-		Description:      stringPtr("High quality brake pad for compact cars"),
+		Description:      stringPtrPhase3("High quality brake pad for compact cars"),
 		BrandID:          1, // Assuming exists from previous seeders
 		CategoryID:       1, // Assuming exists from previous seeders
 		UnitMeasure:      "piece",
@@ -80,14 +80,14 @@ func main() {
 		StockQuantity:    0,
 		MinStockLevel:    5,
 		MaxStockLevel:    50,
-		LocationRack:     stringPtr("A1-01"),
-		Barcode:          stringPtr("BP001234567890"),
+		LocationRack:     stringPtrPhase3("A1-01"),
+		Barcode:          stringPtrPhase3("BP001234567890"),
 		Weight:           floatPtr(0.5),
-		Dimensions:       stringPtr("10cm x 8cm x 2cm"),
+		Dimensions:       stringPtrPhase3("10cm x 8cm x 2cm"),
 		CreatedBy:        1, // Assuming admin user exists
 		IsActive:         true,
-		ProductImage:     stringPtr("/images/brake-pad-sample.jpg"),
-		Notes:            stringPtr("Standard brake pad for daily use"),
+		ProductImage:     stringPtrPhase3("/images/brake-pad-sample.jpg"),
+		Notes:            stringPtrPhase3("Standard brake pad for daily use"),
 	}
 
 	// Generate product code
@@ -125,9 +125,9 @@ func main() {
 		Status:               products.POStatusDraft,
 		PaymentTerms:         products.PaymentTermsNet30,
 		CreatedBy:            1, // Assuming admin user exists
-		DeliveryAddress:      stringPtr("123 Main Street, Warehouse District"),
-		PONotes:              stringPtr("Standard parts order for inventory replenishment"),
-		TermsAndConditions:   stringPtr("Net 30 payment terms. All goods subject to quality inspection."),
+		DeliveryAddress:      stringPtrPhase3("123 Main Street, Warehouse District"),
+		PONotes:              stringPtrPhase3("Standard parts order for inventory replenishment"),
+		TermsAndConditions:   stringPtrPhase3("Net 30 payment terms. All goods subject to quality inspection."),
 	}
 
 	// Generate PO number
@@ -160,7 +160,7 @@ func main() {
 }
 
 // Helper functions for pointer values
-func stringPtr(s string) *string {
+func stringPtrPhase3(s string) *string {
 	return &s
 }
 

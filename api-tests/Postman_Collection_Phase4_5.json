@@ -1,0 +1,429 @@
+{
+	"info": {
+		"_postman_id": "phase4-5-collection",
+		"name": "Point of Sale Showroom - Phase 4 & 5 API Collection",
+		"description": "Complete API collection for Phase 4 (Vehicle Purchase) and Phase 5 (Repair Management) with all endpoints, test data, and expected responses.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Phase 4 - Vehicle Purchase",
+			"item": [
+				{
+					"name": "Transactions",
+					"item": [
+						{
+							"name": "Create Transaction",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"customer_id\": 1,\n  \"vehicle_id\": 101,\n  \"vin_number\": \"1HGBH41JXMN109186\",\n  \"vehicle_brand\": \"Honda\",\n  \"vehicle_model\": \"Civic\",\n  \"vehicle_year\": 2020,\n  \"vehicle_color\": \"White\",\n  \"engine_number\": \"ENG123456789\",\n  \"registration_number\": \"B1234XYZ\",\n  \"purchase_price\": 25000000,\n  \"agreed_value\": 23000000,\n  \"odometer_reading\": 45000,\n  \"fuel_type\": \"gasoline\",\n  \"transmission\": \"automatic\",\n  \"condition_rating\": 8,\n  \"purchase_date\": \"2024-01-15T10:00:00Z\",\n  \"evaluation_notes\": \"Vehicle in good condition\",\n  \"purchase_notes\": \"Customer trade-in vehicle\",\n  \"documents_json\": {\n    \"registration_certificate\": \"available\",\n    \"insurance_documents\": \"available\"\n  }\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/vehicle-purchases/transactions",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "vehicle-purchases", "transactions"]
+								}
+							}
+						},
+						{
+							"name": "Get All Transactions",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/vehicle-purchases/transactions?page=1&limit=10",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "vehicle-purchases", "transactions"],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Transaction by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/vehicle-purchases/transactions/1",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "vehicle-purchases", "transactions", "1"]
+								}
+							}
+						},
+						{
+							"name": "Complete Inspection",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"condition_rating\": 7,\n  \"inspection_notes\": \"Vehicle inspected. Minor cosmetic damage found.\",\n  \"evaluation_notes\": \"Overall good condition with minor repair needed\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/vehicle-purchases/transactions/1/inspect",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "vehicle-purchases", "transactions", "1", "inspect"]
+								}
+							}
+						},
+						{
+							"name": "Process Approval",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"approved\",\n  \"approval_notes\": \"Transaction approved for purchase\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/vehicle-purchases/transactions/1/approve",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "vehicle-purchases", "transactions", "1", "approve"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Payments",
+					"item": [
+						{
+							"name": "Create Payment",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"transaction_id\": 1,\n  \"payment_amount\": 22000000,\n  \"payment_method\": \"bank_transfer\",\n  \"payment_reference\": \"TRF20240115001\",\n  \"bank_name\": \"Bank Mandiri\",\n  \"payment_notes\": \"Full payment for vehicle purchase\",\n  \"due_date\": \"2024-01-20T23:59:59Z\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/vehicle-purchases/payments",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "vehicle-purchases", "payments"]
+								}
+							}
+						},
+						{
+							"name": "Process Payment",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"processed\",\n  \"processing_notes\": \"Payment verified and processed\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/vehicle-purchases/payments/1/process",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "vehicle-purchases", "payments", "1", "process"]
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Phase 5 - Repair Management",
+			"item": [
+				{
+					"name": "Damage Management",
+					"item": [
+						{
+							"name": "Create Damage",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"transaction_id\": 1,\n  \"damage_category\": \"body\",\n  \"damage_severity\": \"medium\",\n  \"damage_description\": \"Scratches and dent on rear bumper\",\n  \"damage_location\": \"rear_bumper\",\n  \"damage_cause\": \"parking_incident\",\n  \"estimated_cost\": 1500000,\n  \"assessment_notes\": \"Requires painting and minor body work\",\n  \"photos_json\": {\n    \"photos\": [\"damage1.jpg\", \"damage2.jpg\"]\n  }\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/repairs/damages",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "repairs", "damages"]
+								}
+							}
+						},
+						{
+							"name": "Assess Damage",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"damage_severity\": \"medium\",\n  \"estimated_cost\": 1200000,\n  \"assessment_notes\": \"Detailed assessment completed\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/repairs/damages/1/assess",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "repairs", "damages", "1", "assess"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Work Orders",
+					"item": [
+						{
+							"name": "Create Work Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"transaction_id\": 1,\n  \"priority_level\": \"medium\",\n  \"estimated_cost\": 1500000,\n  \"estimated_duration_hours\": 8,\n  \"work_description\": \"Repair rear bumper damage\",\n  \"special_instructions\": \"Use original paint color\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/repairs/work-orders",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "repairs", "work-orders"]
+								}
+							}
+						},
+						{
+							"name": "Assign Mechanic",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"mechanic_id\": 5,\n  \"start_date\": \"2024-01-16T08:00:00Z\",\n  \"target_completion_date\": \"2024-01-16T16:00:00Z\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/repairs/work-orders/1/assign",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "repairs", "work-orders", "1", "assign"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Work Details",
+					"item": [
+						{
+							"name": "Create Work Detail",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"work_order_id\": 1,\n  \"damage_id\": 1,\n  \"task_description\": \"Sand and prepare rear bumper surface\",\n  \"estimated_hours\": 2,\n  \"task_priority\": \"high\",\n  \"task_category\": \"bodywork\",\n  \"work_instructions\": \"Remove old paint, sand smooth, apply primer\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/repairs/work-details",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "repairs", "work-details"]
+								}
+							}
+						},
+						{
+							"name": "Update Progress",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"progress_percentage\": 75,\n  \"task_status\": \"in_progress\",\n  \"completion_notes\": \"Surface sanding 75% complete\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/repairs/work-details/1/progress",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "repairs", "work-details", "1", "progress"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Quality Inspections",
+					"item": [
+						{
+							"name": "Create Inspection",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"work_order_id\": 1,\n  \"inspection_type\": \"final_inspection\",\n  \"inspection_checklist_json\": {\n    \"paint_quality\": \"pending\",\n    \"surface_finish\": \"pending\"\n  },\n  \"quality_standards_json\": {\n    \"paint_thickness\": \"120-150 microns\"\n  },\n  \"scheduled_date\": \"2024-01-16T16:00:00Z\",\n  \"inspector_id\": 7\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/repairs/inspections",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "repairs", "inspections"]
+								}
+							}
+						},
+						{
+							"name": "Sign Off Inspection",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"inspection_status\": \"completed\",\n  \"pass_fail_status\": \"pass\",\n  \"quality_score\": 95,\n  \"inspection_notes\": \"All quality standards met\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/repairs/inspections/1/sign-off",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "repairs", "inspections", "1", "sign-off"]
+								}
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "token",
+			"value": "your_jwt_token_here"
+		}
+	]
+}

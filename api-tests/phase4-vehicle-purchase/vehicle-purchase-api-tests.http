@@ -1,0 +1,254 @@
+# Phase 4: Vehicle Purchase Flow - API Test Collection
+# Base URL: http://localhost:8080
+# Authentication: Bearer Token required for all endpoints
+
+### Variables
+@baseUrl = http://localhost:8080
+@token = your_jwt_token_here
+
+### 1. CREATE VEHICLE PURCHASE TRANSACTION
+POST {{baseUrl}}/api/v1/vehicle-purchases/transactions
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "customer_id": 1,
+  "vehicle_id": 101,
+  "vin_number": "1HGBH41JXMN109186",
+  "vehicle_brand": "Honda",
+  "vehicle_model": "Civic",
+  "vehicle_year": 2020,
+  "vehicle_color": "White",
+  "engine_number": "ENG123456789",
+  "registration_number": "B1234XYZ",
+  "purchase_price": 25000000,
+  "agreed_value": 23000000,
+  "odometer_reading": 45000,
+  "fuel_type": "gasoline",
+  "transmission": "automatic",
+  "condition_rating": 8,
+  "purchase_date": "2024-01-15T10:00:00Z",
+  "evaluation_notes": "Vehicle in good condition, minor scratches on rear bumper",
+  "purchase_notes": "Customer trade-in vehicle",
+  "documents_json": {
+    "registration_certificate": "available",
+    "insurance_documents": "available",
+    "service_history": "complete"
+  }
+}
+
+### 2. GET ALL TRANSACTIONS
+GET {{baseUrl}}/api/v1/vehicle-purchases/transactions?page=1&limit=10&status=pending
+Authorization: Bearer {{token}}
+
+### 3. GET TRANSACTION BY ID
+GET {{baseUrl}}/api/v1/vehicle-purchases/transactions/1
+Authorization: Bearer {{token}}
+
+### 4. GET TRANSACTION BY NUMBER
+GET {{baseUrl}}/api/v1/vehicle-purchases/transactions/number/TXN202401001
+Authorization: Bearer {{token}}
+
+### 5. GET TRANSACTION BY VIN
+GET {{baseUrl}}/api/v1/vehicle-purchases/transactions/vin/1HGBH41JXMN109186
+Authorization: Bearer {{token}}
+
+### 6. UPDATE TRANSACTION
+PUT {{baseUrl}}/api/v1/vehicle-purchases/transactions/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "vin_number": "1HGBH41JXMN109186",
+  "vehicle_color": "White",
+  "engine_number": "ENG123456789",
+  "registration_number": "B1234XYZ",
+  "purchase_price": 24000000,
+  "agreed_value": 22000000,
+  "odometer_reading": 45000,
+  "condition_rating": 7,
+  "transaction_status": "inspection",
+  "inspection_notes": "Minor damage found on rear bumper",
+  "evaluation_notes": "Vehicle condition updated after detailed inspection",
+  "purchase_notes": "Price adjusted due to found damage",
+  "documents_json": {
+    "registration_certificate": "available",
+    "insurance_documents": "available",
+    "service_history": "complete",
+    "inspection_report": "completed"
+  }
+}
+
+### 7. COMPLETE INSPECTION
+POST {{baseUrl}}/api/v1/vehicle-purchases/transactions/1/inspect
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "condition_rating": 7,
+  "inspection_notes": "Vehicle inspected. Minor cosmetic damage on rear bumper. Engine and transmission in good condition.",
+  "evaluation_notes": "Overall vehicle condition is good with minor repair needed"
+}
+
+### 8. PROCESS APPROVAL
+POST {{baseUrl}}/api/v1/vehicle-purchases/transactions/1/approve
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "approved",
+  "approval_notes": "Transaction approved for purchase"
+}
+
+### 9. GET PENDING INSPECTIONS
+GET {{baseUrl}}/api/v1/vehicle-purchases/transactions/pending-inspection?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 10. GET PENDING APPROVALS
+GET {{baseUrl}}/api/v1/vehicle-purchases/transactions/pending-approval?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 11. CREATE PAYMENT
+POST {{baseUrl}}/api/v1/vehicle-purchases/payments
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "transaction_id": 1,
+  "payment_amount": 22000000,
+  "payment_method": "bank_transfer",
+  "payment_reference": "TRF20240115001",
+  "bank_name": "Bank Mandiri",
+  "payment_notes": "Full payment for vehicle purchase",
+  "due_date": "2024-01-20T23:59:59Z"
+}
+
+### 12. GET ALL PAYMENTS
+GET {{baseUrl}}/api/v1/vehicle-purchases/payments?page=1&limit=10&status=pending
+Authorization: Bearer {{token}}
+
+### 13. GET PAYMENT BY ID
+GET {{baseUrl}}/api/v1/vehicle-purchases/payments/1
+Authorization: Bearer {{token}}
+
+### 14. GET PAYMENT BY NUMBER
+GET {{baseUrl}}/api/v1/vehicle-purchases/payments/number/PAY202401001
+Authorization: Bearer {{token}}
+
+### 15. PROCESS PAYMENT
+POST {{baseUrl}}/api/v1/vehicle-purchases/payments/1/process
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "processed",
+  "processing_notes": "Payment verified and processed"
+}
+
+### 16. APPROVE PAYMENT
+POST {{baseUrl}}/api/v1/vehicle-purchases/payments/1/approve
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "approved",
+  "approval_notes": "Payment approved and completed"
+}
+
+### 17. GET PAYMENTS BY TRANSACTION
+GET {{baseUrl}}/api/v1/vehicle-purchases/transactions/1/payments?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 18. GET PENDING PAYMENT APPROVALS
+GET {{baseUrl}}/api/v1/vehicle-purchases/payments/pending-approval?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 19. GET OVERDUE PAYMENTS
+GET {{baseUrl}}/api/v1/vehicle-purchases/payments/overdue?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### 20. GET PAYMENT SUMMARY
+GET {{baseUrl}}/api/v1/vehicle-purchases/transactions/1/payment-summary
+Authorization: Bearer {{token}}
+
+### 21. GET DASHBOARD STATS
+GET {{baseUrl}}/api/v1/vehicle-purchases/dashboard
+Authorization: Bearer {{token}}
+
+###############################################
+# EXPECTED RESPONSES
+###############################################
+
+### Response for CREATE TRANSACTION (201 Created)
+# {
+#   "success": true,
+#   "message": "Transaction created successfully",
+#   "data": {
+#     "transaction_id": 1,
+#     "transaction_number": "TXN202401001",
+#     "customer_id": 1,
+#     "customer_name": "John Doe",
+#     "vin_number": "1HGBH41JXMN109186",
+#     "vehicle_brand": "Honda",
+#     "vehicle_model": "Civic",
+#     "purchase_price": 25000000,
+#     "agreed_value": 23000000,
+#     "transaction_status": "pending",
+#     "created_at": "2024-01-15T10:00:00Z"
+#   }
+# }
+
+### Response for GET TRANSACTION (200 OK)
+# {
+#   "success": true,
+#   "message": "Transaction retrieved successfully",
+#   "data": {
+#     "transaction_id": 1,
+#     "transaction_number": "TXN202401001",
+#     "customer_id": 1,
+#     "customer_name": "John Doe",
+#     "vin_number": "1HGBH41JXMN109186",
+#     "vehicle_brand": "Honda",
+#     "vehicle_model": "Civic",
+#     "vehicle_year": 2020,
+#     "purchase_price": 25000000,
+#     "agreed_value": 23000000,
+#     "transaction_status": "pending",
+#     "processed_by_name": "Admin User",
+#     "created_at": "2024-01-15T10:00:00Z",
+#     "updated_at": "2024-01-15T10:00:00Z"
+#   }
+# }
+
+### Response for CREATE PAYMENT (201 Created)
+# {
+#   "success": true,
+#   "message": "Payment created successfully",
+#   "data": {
+#     "payment_id": 1,
+#     "payment_number": "PAY202401001",
+#     "transaction_id": 1,
+#     "transaction_number": "TXN202401001",
+#     "payment_amount": 22000000,
+#     "payment_method": "bank_transfer",
+#     "payment_status": "pending",
+#     "due_date": "2024-01-20T23:59:59Z",
+#     "created_at": "2024-01-15T10:30:00Z"
+#   }
+# }
+
+### Response for DASHBOARD STATS (200 OK)
+# {
+#   "success": true,
+#   "message": "Dashboard stats retrieved successfully",
+#   "data": {
+#     "total_transactions": 15,
+#     "pending_transactions": 3,
+#     "approved_transactions": 10,
+#     "rejected_transactions": 2,
+#     "total_value": 350000000,
+#     "pending_inspections": 2,
+#     "pending_approvals": 1,
+#     "avg_processing_time_hours": 24
+#   }
+# }
