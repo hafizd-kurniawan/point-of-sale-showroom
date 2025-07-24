@@ -112,26 +112,28 @@ func (r *RepairWorkDetailRepository) GetByID(ctx context.Context, id int) (*repa
 func (r *RepairWorkDetailRepository) Update(ctx context.Context, id int, workDetail *repair.RepairWorkDetail) (*repair.RepairWorkDetail, error) {
 	query := `
 		UPDATE repair_work_details SET
-			task_description = $1, estimated_hours = $2, actual_hours = $3,
-			task_priority = $4, task_category = $5, work_instructions = $6,
-			task_status = $7, progress_percentage = $8, quality_check_status = $9,
-			completion_notes = $10, start_time = $11, end_time = $12, updated_at = NOW()
-		WHERE work_detail_id = $13
+			task_sequence = $1, task_description = $2, task_type = $3, 
+			estimated_hours = $4, actual_hours = $5, labor_rate = $6,
+			task_status = $7, start_date = $8, end_date = $9,
+			completion_percentage = $10, task_notes = $11, quality_check_passed = $12,
+			assigned_mechanic_id = $13, updated_at = NOW()
+		WHERE work_detail_id = $14
 		RETURNING updated_at`
 
 	err := r.db.QueryRowContext(ctx, query,
+		workDetail.TaskSequence,
 		workDetail.TaskDescription,
+		workDetail.TaskType,
 		workDetail.EstimatedHours,
 		workDetail.ActualHours,
-		workDetail.TaskPriority,
-		workDetail.TaskCategory,
-		workDetail.WorkInstructions,
+		workDetail.LaborRate,
 		workDetail.TaskStatus,
-		workDetail.ProgressPercentage,
-		workDetail.QualityCheckStatus,
-		workDetail.CompletionNotes,
-		workDetail.StartTime,
-		workDetail.EndTime,
+		workDetail.StartDate,
+		workDetail.EndDate,
+		workDetail.CompletionPercentage,
+		workDetail.TaskNotes,
+		workDetail.QualityCheckPassed,
+		workDetail.AssignedMechanicID,
 		id,
 	).Scan(&workDetail.UpdatedAt)
 
@@ -147,13 +149,17 @@ func (r *RepairWorkDetailRepository) Update(ctx context.Context, id int, workDet
 func (r *RepairWorkDetailRepository) UpdateProgress(ctx context.Context, id int, request *repair.WorkDetailProgressRequest) error {
 	query := `
 		UPDATE repair_work_details 
-		SET progress_percentage = $1, task_status = $2, completion_notes = $3, updated_at = NOW()
-		WHERE work_detail_id = $4`
+		SET completion_percentage = $1, task_status = $2, actual_hours = $3, 
+			start_date = $4, end_date = $5, task_notes = $6, updated_at = NOW()
+		WHERE work_detail_id = $7`
 
 	_, err := r.db.ExecContext(ctx, query,
-		request.ProgressPercentage,
+		request.CompletionPercentage,
 		request.TaskStatus,
-		request.CompletionNotes,
+		request.ActualHours,
+		request.StartDate,
+		request.EndDate,
+		request.ProgressNotes,
 		id,
 	)
 
@@ -204,12 +210,11 @@ func (r *RepairWorkDetailRepository) Delete(ctx context.Context, id int) error {
 func (r *RepairWorkDetailRepository) AssignMechanic(ctx context.Context, id int, request *repair.WorkDetailAssignmentRequest) error {
 	query := `
 		UPDATE repair_work_details 
-		SET assigned_mechanic_id = $1, start_time = $2, task_status = 'assigned', updated_at = NOW()
-		WHERE work_detail_id = $3`
+		SET assigned_mechanic_id = $1, task_status = 'in_progress', updated_at = NOW()
+		WHERE work_detail_id = $2`
 
 	_, err := r.db.ExecContext(ctx, query,
-		request.MechanicID,
-		request.StartTime,
+		request.AssignedMechanicID,
 		id,
 	)
 
@@ -224,11 +229,14 @@ func (r *RepairWorkDetailRepository) AssignMechanic(ctx context.Context, id int,
 func (r *RepairWorkDetailRepository) PerformQualityCheck(ctx context.Context, id int, request *repair.WorkDetailQualityCheckRequest, verifiedBy int) error {
 	query := `
 		UPDATE repair_work_details 
-		SET quality_check_status = $1, verified_by = $2, verified_at = NOW(), updated_at = NOW()
-		WHERE work_detail_id = $3`
+		SET quality_check_passed = $1, actual_hours = $2, task_notes = $3, 
+			verified_by = $4, verified_at = NOW(), updated_at = NOW()
+		WHERE work_detail_id = $5`
 
 	_, err := r.db.ExecContext(ctx, query,
-		request.QualityCheckStatus,
+		request.QualityCheckPassed,
+		request.ActualHours,
+		request.QualityNotes,
 		verifiedBy,
 		id,
 	)
@@ -247,9 +255,12 @@ func (r *RepairWorkDetailRepository) GetWorkDetailSummary(ctx context.Context, w
 			COUNT(*) as total_tasks,
 			COALESCE(SUM(estimated_hours), 0) as total_estimated_hours,
 			COALESCE(SUM(actual_hours), 0) as total_actual_hours,
-			COALESCE(AVG(progress_percentage), 0) as average_progress,
+			COALESCE(AVG(completion_percentage), 0) as overall_progress,
 			COUNT(CASE WHEN task_status = 'completed' THEN 1 END) as completed_tasks,
-			COUNT(CASE WHEN task_status = 'in_progress' THEN 1 END) as in_progress_tasks
+			COUNT(CASE WHEN task_status = 'in_progress' THEN 1 END) as in_progress_tasks,
+			COUNT(CASE WHEN task_status = 'pending' THEN 1 END) as pending_tasks,
+			COUNT(CASE WHEN quality_check_passed = true THEN 1 END) as quality_checks_passed,
+			COUNT(CASE WHEN quality_check_passed = false THEN 1 END) as quality_checks_failed
 		FROM repair_work_details 
 		WHERE work_order_id = $1`
 
@@ -258,9 +269,12 @@ func (r *RepairWorkDetailRepository) GetWorkDetailSummary(ctx context.Context, w
 		&summary.TotalTasks,
 		&summary.TotalEstimatedHours,
 		&summary.TotalActualHours,
-		&summary.AverageProgress,
+		&summary.OverallProgress,
 		&summary.CompletedTasks,
 		&summary.InProgressTasks,
+		&summary.PendingTasks,
+		&summary.QualityChecksPassed,
+		&summary.QualityChecksFailed,
 	)
 
 	if err != nil {
