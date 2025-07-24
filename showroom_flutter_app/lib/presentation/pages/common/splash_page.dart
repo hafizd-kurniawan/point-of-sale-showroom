@@ -23,6 +23,14 @@ class _SplashPageState extends State<SplashPage>
     print('SplashPage initState called');
     _setupAnimations();
     _checkAuthStatus();
+    
+    // Add a timeout fallback in case something goes wrong
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted) {
+        print('Splash timeout reached, forcing navigation to login');
+        context.go('/auth/login');
+      }
+    });
   }
 
   void _setupAnimations() {
@@ -51,15 +59,16 @@ class _SplashPageState extends State<SplashPage>
   }
 
   void _checkAuthStatus() {
-    // Add the AuthBloc listener to trigger auth check
-    Future.delayed(const Duration(seconds: 2), () {
+    // Reduce delay and add more robust error handling
+    Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) {
         try {
           print('Triggering auth check');
-          context.read<AuthBloc>().add(AuthCheckRequested());
+          final authBloc = context.read<AuthBloc>();
+          authBloc.add(AuthCheckRequested());
         } catch (e) {
           print('Failed to trigger auth check: $e');
-          // If AuthBloc is not available, navigate to login
+          // If AuthBloc is not available, navigate to login directly
           if (mounted) {
             context.go('/auth/login');
           }
